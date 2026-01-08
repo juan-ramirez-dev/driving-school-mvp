@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { getBookings } from "@/lib/mockData";
@@ -18,7 +18,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 
-export default function ConfirmationPage() {
+function ConfirmationContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [booking, setBooking] = useState<Booking | null>(null);
@@ -205,5 +205,19 @@ export default function ConfirmationPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function ConfirmationPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center">
+          <p className="text-muted-foreground">Cargando...</p>
+        </div>
+      }
+    >
+      <ConfirmationContent />
+    </Suspense>
   );
 }
