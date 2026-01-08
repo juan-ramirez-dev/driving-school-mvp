@@ -36,15 +36,15 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
+    <div className="flex min-h-screen items-center justify-center bg-background p-4 sm:p-6">
       <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold">Bienvenido</CardTitle>
-          <CardDescription>
+        <CardHeader className="space-y-1 pb-4 sm:pb-6">
+          <CardTitle className="text-xl sm:text-2xl font-bold">Bienvenido</CardTitle>
+          <CardDescription className="text-sm sm:text-base">
             Inicia sesión para programar tus clases de manejo
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-4 sm:pt-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
               <Alert variant="destructive">

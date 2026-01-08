@@ -20,7 +20,7 @@ export function TimeSlot({ slot, onClick, disabled }: TimeSlotProps) {
     <Button
       variant={isAvailable ? "default" : "outline"}
       className={cn(
-        "h-20 w-full flex-col items-center justify-center gap-1 p-2",
+        "h-16 sm:h-20 w-full flex-col items-center justify-center gap-1 p-2 sm:p-3",
         isAvailable &&
           "bg-green-500 hover:bg-green-600 text-white border-green-600",
         isUnavailable &&
@@ -32,7 +32,7 @@ export function TimeSlot({ slot, onClick, disabled }: TimeSlotProps) {
       onClick={() => !disabled && isAvailable && onClick(slot)}
       disabled={disabled || !isAvailable}
     >
-      <div className="text-sm font-semibold">
+      <div className="text-xs sm:text-sm font-semibold">
         {slot.startTime} - {slot.endTime}
       </div>
       <Badge
@@ -44,7 +44,7 @@ export function TimeSlot({ slot, onClick, disabled }: TimeSlotProps) {
             : "secondary"
         }
         className={cn(
-          "text-xs",
+          "text-[10px] sm:text-xs px-1.5 sm:px-2",
           isAvailable && "bg-green-600 hover:bg-green-700",
           isUnavailable && "bg-red-500 hover:bg-red-600"
         )}

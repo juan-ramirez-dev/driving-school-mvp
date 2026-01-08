@@ -84,24 +84,24 @@ export function BookingDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="w-[95vw] sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Reservar una Clase de Manejo</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-lg sm:text-xl">Reservar una Clase de Manejo</DialogTitle>
+          <DialogDescription className="text-sm sm:text-base">
             Confirma los detalles de tu reserva a continuación
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        <div className="space-y-3 sm:space-y-4 py-2 sm:py-4">
           {/* Date and Time Display */}
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
+            <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
+              <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
               <span className="font-medium">Fecha:</span>
-              <span>{formatDate(slot.date)}</span>
+              <span className="break-words">{formatDate(slot.date)}</span>
             </div>
-            <div className="flex items-center gap-2 text-sm">
-              <Clock className="h-4 w-4 text-muted-foreground" />
+            <div className="flex items-center gap-2 text-xs sm:text-sm">
+              <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
               <span className="font-medium">Hora:</span>
               <span>
                 {slot.startTime} - {slot.endTime}
@@ -132,11 +132,11 @@ export function BookingDialog({
 
           {/* Instructor Selection */}
           <div className="space-y-2">
-            <Label className="flex items-center gap-2">
-              <User className="h-4 w-4" />
+            <Label className="flex items-center gap-2 text-sm sm:text-base">
+              <User className="h-3 w-3 sm:h-4 sm:w-4" />
               Instructor
             </Label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2 sm:gap-3">
               {instructors.map((instructor) => {
                 const isSelected = selectedInstructor === instructor.id;
                 const initials = instructor.name

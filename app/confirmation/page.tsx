@@ -88,32 +88,32 @@ export default function ConfirmationPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-8">
-      <div className="mx-auto max-w-2xl space-y-6">
+    <div className="min-h-screen bg-background p-4 sm:p-6 md:p-8">
+      <div className="mx-auto max-w-2xl space-y-4 sm:space-y-6">
         {/* Success Header */}
-        <div className="text-center space-y-4">
+        <div className="text-center space-y-3 sm:space-y-4">
           <div className="flex justify-center">
-            <div className="rounded-full bg-green-100 p-4">
-              <CheckCircle2 className="h-12 w-12 text-green-600" />
+            <div className="rounded-full bg-green-100 p-3 sm:p-4">
+              <CheckCircle2 className="h-8 w-8 sm:h-12 sm:w-12 text-green-600" />
             </div>
           </div>
-          <h1 className="text-3xl font-bold">¡Reserva Confirmada!</h1>
-          <p className="text-muted-foreground text-lg">
+          <h1 className="text-2xl sm:text-3xl font-bold">¡Reserva Confirmada!</h1>
+          <p className="text-muted-foreground text-base sm:text-lg">
             Tu clase de manejo ha sido programada exitosamente.
           </p>
         </div>
 
         {/* Booking Details Card */}
         <Card>
-          <CardHeader>
-            <CardTitle>Detalles de la Reserva</CardTitle>
+          <CardHeader className="pb-3 sm:pb-6">
+            <CardTitle className="text-lg sm:text-xl">Detalles de la Reserva</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3 sm:space-y-4">
             {/* Class Type */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
               <div className="flex items-center gap-2">
-                <BookOpen className="h-5 w-5 text-muted-foreground" />
-                <span className="font-medium">Tipo de Clase</span>
+                <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
+                <span className="font-medium text-sm sm:text-base">Tipo de Clase</span>
               </div>
               <Badge
                 variant={
@@ -128,35 +128,35 @@ export default function ConfirmationPage() {
             </div>
 
             {/* Date */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
               <div className="flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-muted-foreground" />
-                <span className="font-medium">Fecha</span>
+                <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
+                <span className="font-medium text-sm sm:text-base">Fecha</span>
               </div>
-              <span className="text-muted-foreground">
+              <span className="text-muted-foreground text-sm sm:text-base sm:text-right">
                 {formatDate(booking.date)}
               </span>
             </div>
 
             {/* Time */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
               <div className="flex items-center gap-2">
-                <Clock className="h-5 w-5 text-muted-foreground" />
-                <span className="font-medium">Hora</span>
+                <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
+                <span className="font-medium text-sm sm:text-base">Hora</span>
               </div>
-              <span className="text-muted-foreground">
+              <span className="text-muted-foreground text-sm sm:text-base sm:text-right">
                 {formatTime(booking.startTime)} - {formatTime(booking.endTime)}
               </span>
             </div>
 
             {/* Instructor */}
             {instructor && (
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
                 <div className="flex items-center gap-2">
-                  <UserIcon className="h-5 w-5 text-muted-foreground" />
-                  <span className="font-medium">Instructor</span>
+                  <UserIcon className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
+                  <span className="font-medium text-sm sm:text-base">Instructor</span>
                 </div>
-                <span className="text-muted-foreground">
+                <span className="text-muted-foreground text-sm sm:text-base sm:text-right">
                   {instructor.name}
                 </span>
               </div>

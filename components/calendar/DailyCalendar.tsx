@@ -113,9 +113,9 @@ export function DailyCalendar({
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-xl">
+      <CardHeader className="pb-3 sm:pb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
+          <CardTitle className="text-lg sm:text-xl">
             {formatDate(selectedDate)}
           </CardTitle>
           <div className="flex items-center gap-2">
@@ -124,14 +124,16 @@ export function DailyCalendar({
               size="icon"
               onClick={goToPreviousDay}
               disabled={isLoading}
+              className="h-8 w-8 sm:h-10 sm:w-10"
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={goToToday}
               disabled={isLoading}
+              className="h-8 px-3 sm:h-10 sm:px-4 text-xs sm:text-sm"
             >
               Hoy
             </Button>
@@ -140,17 +142,18 @@ export function DailyCalendar({
               size="icon"
               onClick={goToNextDay}
               disabled={isLoading}
+              className="h-8 w-8 sm:h-10 sm:w-10"
             >
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
             </Button>
           </div>
         </div>
-        <div className="flex gap-4 text-sm text-muted-foreground">
+        <div className="flex flex-wrap gap-3 sm:gap-4 text-xs sm:text-sm text-muted-foreground mt-2">
           <span>Disponibles: {availableCount}</span>
           <span>No disponibles: {unavailableCount}</span>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-4 sm:pt-6">
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
             <p className="text-muted-foreground">Cargando disponibilidad...</p>
@@ -170,7 +173,7 @@ export function DailyCalendar({
                 </AlertDescription>
               </Alert>
             )}
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3">
               {slots.map((slot) => (
                 <TimeSlot
                   key={slot.id}

@@ -144,35 +144,36 @@ export default function CalendarPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-8">
-      <div className="mx-auto max-w-7xl space-y-6">
+    <div className="min-h-screen bg-background p-3 sm:p-4 md:p-6 lg:p-8">
+      <div className="mx-auto max-w-7xl space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">Programa Tus Clases</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-2xl sm:text-3xl font-bold">Programa Tus Clases</h1>
+            <p className="text-sm sm:text-base text-muted-foreground mt-1">
               Reserva clases teóricas o prácticas de manejo
             </p>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 text-sm">
-              <UserIcon className="h-4 w-4" />
-              <span>{user.name}</span>
+          <div className="flex items-center gap-2 sm:gap-4">
+            <div className="flex items-center gap-2 text-xs sm:text-sm">
+              <UserIcon className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="truncate max-w-[100px] sm:max-w-none">{user.name}</span>
             </div>
-            <Button variant="outline" onClick={handleLogout}>
-              <LogOut className="mr-2 h-4 w-4" />
-              Cerrar Sesión
+            <Button variant="outline" size="sm" onClick={handleLogout} className="text-xs sm:text-sm">
+              <LogOut className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Cerrar Sesión</span>
+              <span className="sm:hidden">Salir</span>
             </Button>
           </div>
         </div>
 
         {/* Instructor Selection */}
         <Card>
-          <CardHeader>
-            <CardTitle>Seleccionar Instructor</CardTitle>
+          <CardHeader className="pb-3 sm:pb-6">
+            <CardTitle className="text-lg sm:text-xl">Seleccionar Instructor</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
               {MOCK_INSTRUCTORS.map((instructor) => {
                 const isSelected = selectedInstructor?.id === instructor.id;
                 const initials = instructor.name
@@ -199,12 +200,12 @@ export default function CalendarPage() {
                           : "hover:shadow-md"
                       )}
                     >
-                      <CardContent className="p-4">
-                        <div className="flex flex-col items-center gap-3">
+                      <CardContent className="p-3 sm:p-4">
+                        <div className="flex flex-col items-center gap-2 sm:gap-3">
                           {/* Avatar */}
                           <div
                             className={cn(
-                              "relative w-20 h-20 rounded-full flex items-center justify-center text-2xl font-bold text-white transition-all",
+                              "relative w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center text-xl sm:text-2xl font-bold text-white transition-all",
                               isSelected
                                 ? "bg-primary scale-110"
                                 : "bg-gradient-to-br from-primary/80 to-primary/60 group-hover:from-primary group-hover:to-primary/80"
@@ -212,8 +213,8 @@ export default function CalendarPage() {
                           >
                             {initials}
                             {isSelected && (
-                              <div className="absolute -top-1 -right-1 w-6 h-6 bg-primary rounded-full flex items-center justify-center border-2 border-background">
-                                <Check className="h-3 w-3 text-white" />
+                              <div className="absolute -top-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 bg-primary rounded-full flex items-center justify-center border-2 border-background">
+                                <Check className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-white" />
                               </div>
                             )}
                           </div>
@@ -221,13 +222,13 @@ export default function CalendarPage() {
                           <div className="text-center">
                             <p
                               className={cn(
-                                "font-semibold text-sm",
+                                "font-semibold text-xs sm:text-sm",
                                 isSelected && "text-primary"
                               )}
                             >
                               {instructor.name.split(" ")[0]}
                             </p>
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-[10px] sm:text-xs text-muted-foreground">
                               {instructor.name.split(" ")[1]}
                             </p>
                           </div>
@@ -263,7 +264,7 @@ export default function CalendarPage() {
         {/* Info Alert */}
         {selectedInstructor && (
           <Alert>
-            <AlertDescription>
+            <AlertDescription className="text-xs sm:text-sm">
               Haz clic en un horario verde para reservar una clase. Los horarios rojos están
               no disponibles y los grises ya están reservados.
             </AlertDescription>
