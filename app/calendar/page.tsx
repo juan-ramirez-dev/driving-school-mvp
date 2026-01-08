@@ -14,19 +14,12 @@ import {
 import { DailyCalendar } from "@/components/calendar/DailyCalendar";
 import { BookingDialog } from "@/components/booking/BookingDialog";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import type { User, Instructor, TimeSlot, ClassType, Booking } from "@/lib/types";
-import { LogOut, User as UserIcon } from "lucide-react";
+import { LogOut, User as UserIcon, Check } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function CalendarPage() {
   const router = useRouter();
@@ -179,26 +172,71 @@ export default function CalendarPage() {
             <CardTitle>Seleccionar Instructor</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
-              <Label htmlFor="instructor">Instructor</Label>
-              <Select
-                value={selectedInstructor?.id || ""}
-                onValueChange={(value) => {
-                  const instructor = MOCK_INSTRUCTORS.find((i) => i.id === value);
-                  setSelectedInstructor(instructor || null);
-                }}
-              >
-                <SelectTrigger id="instructor" className="w-full md:w-[300px]">
-                  <SelectValue placeholder="Selecciona un instructor" />
-                </SelectTrigger>
-                <SelectContent>
-                  {MOCK_INSTRUCTORS.map((instructor) => (
-                    <SelectItem key={instructor.id} value={instructor.id}>
-                      {instructor.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4">
+              {MOCK_INSTRUCTORS.map((instructor) => {
+                const isSelected = selectedInstructor?.id === instructor.id;
+                const initials = instructor.name
+                  .split(" ")
+                  .map((n) => n[0])
+                  .join("")
+                  .toUpperCase()
+                  .slice(0, 2);
+
+                return (
+                  <button
+                    key={instructor.id}
+                    onClick={() => setSelectedInstructor(instructor)}
+                    className={cn(
+                      "relative group cursor-pointer transition-all duration-200",
+                      "hover:scale-105 active:scale-95"
+                    )}
+                  >
+                    <Card
+                      className={cn(
+                        "overflow-hidden transition-all duration-200",
+                        isSelected
+                          ? "ring-2 ring-primary ring-offset-2 shadow-lg"
+                          : "hover:shadow-md"
+                      )}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex flex-col items-center gap-3">
+                          {/* Avatar */}
+                          <div
+                            className={cn(
+                              "relative w-20 h-20 rounded-full flex items-center justify-center text-2xl font-bold text-white transition-all",
+                              isSelected
+                                ? "bg-primary scale-110"
+                                : "bg-gradient-to-br from-primary/80 to-primary/60 group-hover:from-primary group-hover:to-primary/80"
+                            )}
+                          >
+                            {initials}
+                            {isSelected && (
+                              <div className="absolute -top-1 -right-1 w-6 h-6 bg-primary rounded-full flex items-center justify-center border-2 border-background">
+                                <Check className="h-3 w-3 text-white" />
+                              </div>
+                            )}
+                          </div>
+                          {/* Name */}
+                          <div className="text-center">
+                            <p
+                              className={cn(
+                                "font-semibold text-sm",
+                                isSelected && "text-primary"
+                              )}
+                            >
+                              {instructor.name.split(" ")[0]}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {instructor.name.split(" ")[1]}
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </button>
+                );
+              })}
             </div>
           </CardContent>
         </Card>
