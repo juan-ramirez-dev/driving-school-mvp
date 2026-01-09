@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import type { Instructor, TimeSlot } from "@/lib/types";
+import type { Instructor, TimeSlot, TimeSlotStatus } from "@/lib/types";
 import {
   getInstructorSchedule,
   saveInstructorSchedule,
@@ -103,7 +103,7 @@ export function InstructorScheduleManager({
       s.id === slotId
         ? {
             ...s,
-            status: s.status === "available" ? "unavailable" : "available",
+            status: (s.status === "available" ? "unavailable" : "available") as TimeSlotStatus,
           }
         : s
     );
