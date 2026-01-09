@@ -635,3 +635,84 @@ function getMockUsers(): User[] {
   
   return allUsers;
 }
+
+// Instructor Schedule Management
+const SCHEDULE_STORAGE_KEY = "driving-school-instructor-schedules";
+
+export interface InstructorSchedule {
+  instructorId: string;
+  date: string;
+  slots: TimeSlot[];
+}
+
+// Get instructor schedule for a specific date
+export function getInstructorSchedule(
+  instructorId: string,
+  date: string
+): TimeSlot[] {
+  if (typeof window === "undefined") return [];
+
+  const stored = localStorage.getItem(SCHEDULE_STORAGE_KEY);
+  if (!stored) return [];
+
+  try {
+    const schedules: InstructorSchedule[] = JSON.parse(stored);
+    const schedule = schedules.find(
+      (s) => s.instructorId === instructorId && s.date === date
+    );
+    return schedule ? schedule.slots : [];
+  } catch {
+    return [];
+  }
+}
+
+// Save instructor schedule for a specific date
+export function saveInstructorSchedule(
+  instructorId: string,
+  date: string,
+  slots: TimeSlot[]
+): void {
+  if (typeof window === "undefined") return;
+
+  const stored = localStorage.getItem(SCHEDULE_STORAGE_KEY);
+  let schedules: InstructorSchedule[] = [];
+
+  if (stored) {
+    try {
+      schedules = JSON.parse(stored);
+    } catch {
+      schedules = [];
+    }
+  }
+
+  // Remove existing schedule for this instructor and date
+  schedules = schedules.filter(
+    (s) => !(s.instructorId === instructorId && s.date === date)
+  );
+
+  // Add new schedule
+  schedules.push({
+    instructorId,
+    date,
+    slots,
+  });
+
+  localStorage.setItem(SCHEDULE_STORAGE_KEY, JSON.stringify(schedules));
+}
+
+// Get all schedules for an instructor
+export function getAllInstructorSchedules(
+  instructorId: string
+): InstructorSchedule[] {
+  if (typeof window === "undefined") return [];
+
+  const stored = localStorage.getItem(SCHEDULE_STORAGE_KEY);
+  if (!stored) return [];
+
+  try {
+    const schedules: InstructorSchedule[] = JSON.parse(stored);
+    return schedules.filter((s) => s.instructorId === instructorId);
+  } catch {
+    return [];
+  }
+}
