@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { login } from "@/lib/auth";
+import { login, isAdmin } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +14,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [identification, setIdentification] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -23,9 +24,15 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      await login(username, password);
+      const user = await login(username, password, identification);
       toast.success("¡Inicio de sesión exitoso!");
-      router.push("/calendar");
+      
+      // Redirect admin to admin dashboard, others to calendar
+      if (isAdmin()) {
+        router.push("/admin/dashboard");
+      } else {
+        router.push("/calendar");
+      }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Login failed";
       setError(errorMessage);
@@ -44,7 +51,7 @@ export default function LoginPage() {
             Inicia sesión para programar tus clases de manejo
           </CardDescription>
         </CardHeader>
-        <CardContent className="pt-4 sm:pt-6">
+        <CardContent className="">
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
               <Alert variant="destructive">
@@ -59,6 +66,18 @@ export default function LoginPage() {
                 placeholder="Ingresa tu usuario"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
+                required
+                disabled={isLoading}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="identification">Identificación</Label>
+              <Input
+                id="identification"
+                type="text"
+                placeholder="Ingresa tu identificación"
+                value={identification}
+                onChange={(e) => setIdentification(e.target.value)}
                 required
                 disabled={isLoading}
               />
