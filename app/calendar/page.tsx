@@ -148,11 +148,18 @@ export default function CalendarPage() {
       <div className="mx-auto max-w-7xl space-y-4 sm:space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold">Programa Tus Clases</h1>
-            <p className="text-sm sm:text-base text-muted-foreground mt-1">
-              Reserva clases teóricas o prácticas de manejo
-            </p>
+          <div className="flex items-center gap-4">
+            <img 
+              src="/logo.png" 
+              alt="SANTALIBRADA Logo" 
+              className="h-16 sm:h-20 w-auto hidden sm:block"
+            />
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold">Programa Tus Clases</h1>
+              <p className="text-sm sm:text-base text-muted-foreground mt-1">
+                Reserva clases teóricas o prácticas de manejo
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
             <div className="flex items-center gap-2 text-xs sm:text-sm">

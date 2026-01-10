@@ -14,8 +14,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Autoescuela - Programa Tus Clases",
-  description: "Programa clases teóricas y prácticas de manejo",
+  title: "SANTALIBRADA - Centro de Enseñanza Automovilística",
+  description: "Aprendiendo sobre ruedas - Programa clases teóricas y prácticas de manejo",
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({

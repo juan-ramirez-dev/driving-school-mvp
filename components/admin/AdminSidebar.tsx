@@ -18,7 +18,14 @@ export function AdminSidebar({
   return (
     <div className="flex flex-col h-full border-r bg-card">
       <div className="p-4 border-b">
-        <h2 className="text-lg font-semibold">Panel de Administración</h2>
+        <div className="flex flex-col items-center gap-2">
+          <img 
+            src="/logo.png" 
+            alt="SANTALIBRADA Logo" 
+            className="h-16 w-auto"
+          />
+          <h2 className="text-sm font-semibold text-center">Panel de Administración</h2>
+        </div>
       </div>
       <nav className="flex-1 p-4 space-y-2">
         <Button

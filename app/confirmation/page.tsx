@@ -90,6 +90,15 @@ function ConfirmationContent() {
   return (
     <div className="min-h-screen bg-background p-4 sm:p-6 md:p-8">
       <div className="mx-auto max-w-2xl space-y-4 sm:space-y-6">
+        {/* Logo */}
+        <div className="flex justify-center">
+          <img 
+            src="/logo.png" 
+            alt="SANTALIBRADA Logo" 
+            className="h-20 sm:h-24 w-auto"
+          />
+        </div>
+        
         {/* Success Header */}
         <div className="text-center space-y-3 sm:space-y-4">
           <div className="flex justify-center">

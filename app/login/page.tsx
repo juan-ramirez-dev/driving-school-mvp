@@ -46,8 +46,15 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-background p-4 sm:p-6">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 pb-4 sm:pb-6">
-          <CardTitle className="text-xl sm:text-2xl font-bold">Bienvenido</CardTitle>
-          <CardDescription className="text-sm sm:text-base">
+          <div className="flex justify-center mb-4">
+            <img 
+              src="/logo.png" 
+              alt="SANTALIBRADA Logo" 
+              className="h-24 sm:h-32 w-auto"
+            />
+          </div>
+          <CardTitle className="text-xl sm:text-2xl font-bold text-center">Bienvenido</CardTitle>
+          <CardDescription className="text-sm sm:text-base text-center">
             Inicia sesión para programar tus clases de manejo
           </CardDescription>
         </CardHeader>

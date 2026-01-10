@@ -141,25 +141,34 @@ export default function AdminDashboardPage() {
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Mobile Sidebar Toggle */}
         <div className="md:hidden p-4 border-b bg-card">
-          <div className="flex items-center justify-between">
-            <h1 className="text-xl font-bold">Panel de Administración</h1>
-            <div className="flex gap-2">
-              <Button
-                variant={activeView === "bookings" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setActiveView("bookings")}
-                className="text-xs"
-              >
-                Reservas
-              </Button>
-              <Button
-                variant={activeView === "schedules" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setActiveView("schedules")}
-                className="text-xs"
-              >
-                Horarios
-              </Button>
+          <div className="flex flex-col gap-3">
+            <div className="flex justify-center">
+              <img 
+                src="/logo.png" 
+                alt="SANTALIBRADA Logo" 
+                className="h-12 w-auto"
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <h1 className="text-lg font-bold">Panel de Administración</h1>
+              <div className="flex gap-2">
+                <Button
+                  variant={activeView === "bookings" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setActiveView("bookings")}
+                  className="text-xs"
+                >
+                  Reservas
+                </Button>
+                <Button
+                  variant={activeView === "schedules" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setActiveView("schedules")}
+                  className="text-xs"
+                >
+                  Horarios
+                </Button>
+              </div>
             </div>
           </div>
         </div>
