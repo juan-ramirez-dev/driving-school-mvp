@@ -11,6 +11,7 @@ import {
   getCompletedReservations,
   exportRUNT,
 } from "@/src/api";
+import { CompletedReservationsChart } from "@/components/admin/CompletedReservationsChart";
 
 export default function DashboardPage() {
   const [stats, setStats] = useState({
@@ -146,6 +147,9 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Completed Reservations Chart */}
+      <CompletedReservationsChart />
     </div>
   );
 }

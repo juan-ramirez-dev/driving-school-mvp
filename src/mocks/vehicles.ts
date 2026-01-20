@@ -23,8 +23,8 @@ let vehicles: Vehicle[] = [
     year: 2020,
     color: "White",
     isActive: true,
-    createdAt: "2024-01-15T10:00:00Z",
-    updatedAt: "2024-01-15T10:00:00Z",
+    createdAt: "2025-01-15T10:00:00Z",
+    updatedAt: "2025-01-15T10:00:00Z",
   },
   {
     id: "2",
@@ -34,8 +34,8 @@ let vehicles: Vehicle[] = [
     year: 2021,
     color: "Black",
     isActive: true,
-    createdAt: "2024-02-20T14:30:00Z",
-    updatedAt: "2024-02-20T14:30:00Z",
+    createdAt: "2025-02-20T14:30:00Z",
+    updatedAt: "2025-02-20T14:30:00Z",
   },
   {
     id: "3",
@@ -46,7 +46,7 @@ let vehicles: Vehicle[] = [
     color: "Red",
     isActive: false,
     createdAt: "2023-11-10T09:15:00Z",
-    updatedAt: "2024-03-05T16:45:00Z",
+    updatedAt: "2025-03-05T16:45:00Z",
   },
 ];
 

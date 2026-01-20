@@ -23,8 +23,8 @@ let teachers: Teacher[] = [
     licenseNumber: "TCH-001",
     specialization: ["Practical", "Highway"],
     isActive: true,
-    createdAt: "2024-01-05T08:00:00Z",
-    updatedAt: "2024-01-05T08:00:00Z",
+    createdAt: "2025-01-05T08:00:00Z",
+    updatedAt: "2025-01-05T08:00:00Z",
   },
   {
     id: "2",
@@ -34,8 +34,8 @@ let teachers: Teacher[] = [
     licenseNumber: "TCH-002",
     specialization: ["Theoretical", "Practical"],
     isActive: true,
-    createdAt: "2024-01-08T09:15:00Z",
-    updatedAt: "2024-01-08T09:15:00Z",
+    createdAt: "2025-01-08T09:15:00Z",
+    updatedAt: "2025-01-08T09:15:00Z",
   },
   {
     id: "3",
@@ -46,7 +46,7 @@ let teachers: Teacher[] = [
     specialization: ["Practical"],
     isActive: false,
     createdAt: "2023-12-10T10:30:00Z",
-    updatedAt: "2024-02-20T16:45:00Z",
+    updatedAt: "2025-02-20T16:45:00Z",
   },
 ];
 
