@@ -12,6 +12,7 @@ import {
 } from "@/src/api";
 import { getTeachers } from "@/src/api";
 import type { Reservation, Teacher } from "@/src/mocks/types";
+import { TeacherClassesManager } from "@/components/teacher/TeacherClassesManager";
 
 export default function TeacherDashboardPage() {
   const router = useRouter();
@@ -234,6 +235,11 @@ export default function TeacherDashboardPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Teacher Classes Manager */}
+        {teacher && (
+          <TeacherClassesManager teacherId={teacher.id} />
+        )}
       </div>
     </div>
   );

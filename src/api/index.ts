@@ -18,6 +18,7 @@ export * from "./wrappers/classrooms";
 export * from "./wrappers/teachers";
 export * from "./wrappers/students";
 export * from "./wrappers/dashboard";
+export * from "./wrappers/attendance";
 
 // Export configuration utilities
 export {
