@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { login, isAdmin } from "@/lib/auth";
+import { login, isAdmin, isTeacher } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,9 +27,11 @@ export default function LoginPage() {
       const user = await login(username, password, identification);
       toast.success("¡Inicio de sesión exitoso!");
       
-      // Redirect admin to admin dashboard, others to calendar
+      // Redirect based on role
       if (isAdmin()) {
         router.push("/admin/dashboard");
+      } else if (isTeacher()) {
+        router.push("/teacher/dashboard");
       } else {
         router.push("/calendar");
       }

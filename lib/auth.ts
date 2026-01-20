@@ -45,6 +45,25 @@ export function login(username: string, password: string, identification?: strin
         return;
       }
 
+      // Check for teacher login
+      if (username === "teacher" && password === "teacher") {
+        const teacherUser: User = {
+          id: "teacher-1",
+          username: "teacher",
+          email: "teacher@drivingschool.com",
+          name: "Instructor",
+          role: "teacher",
+        };
+
+        // Save teacher user to localStorage
+        if (typeof window !== "undefined") {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(teacherUser));
+        }
+
+        resolve(teacherUser);
+        return;
+      }
+
       // Find user by username or create a new one
       let user = MOCK_USERS.find((u) => u.username === username);
 
@@ -83,6 +102,25 @@ export function login(username: string, password: string, identification?: strin
 export function isAdmin(): boolean {
   const user = getCurrentUser();
   return user?.role === "admin" || user?.username === "admin";
+}
+
+export function isTeacher(): boolean {
+  const user = getCurrentUser();
+  return user?.role === "teacher" || user?.username === "teacher";
+}
+
+export function isStudent(): boolean {
+  const user = getCurrentUser();
+  return user?.role === "student" || (!user?.role && user?.username !== "admin" && user?.username !== "teacher");
+}
+
+export function getUserRole(): "student" | "admin" | "teacher" | null {
+  const user = getCurrentUser();
+  if (!user) return null;
+  if (user.role) return user.role;
+  if (user.username === "admin") return "admin";
+  if (user.username === "teacher") return "teacher";
+  return "student";
 }
 
 export function logout(): void {
