@@ -1,0 +1,9 @@
+---
+name: next-js-rules
+description: This is a new rule
+---
+
+# Overview
+
+
+Always use typescript, shadcn, the nextjs best practices, ask if you questions before begin with the implementation
