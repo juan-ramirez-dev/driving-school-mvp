@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, isAdmin, isTeacher } from "@/lib/auth";
 
 export default function Home() {
   const router = useRouter();
@@ -10,7 +10,13 @@ export default function Home() {
   useEffect(() => {
     const user = getCurrentUser();
     if (user) {
-      router.push("/calendar");
+      if (isAdmin()) {
+        router.push("/admin/dashboard");
+      } else if (isTeacher()) {
+        router.push("/teacher/dashboard");
+      } else {
+        router.push("/student/dashboard");
+      }
     } else {
       router.push("/login");
     }

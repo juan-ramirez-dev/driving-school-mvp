@@ -33,7 +33,7 @@ export default function LoginPage() {
       } else if (isTeacher()) {
         router.push("/teacher/dashboard");
       } else {
-        router.push("/calendar");
+        router.push("/student/dashboard");
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Login failed";
