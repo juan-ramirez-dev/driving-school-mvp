@@ -92,9 +92,9 @@ export default function StudentDashboardPage() {
       // Note: studentId removed - backend uses authenticated user
       const [slotsRes, bookingsRes, finesRes, debtRes] = await Promise.all([
         getAvailableSlots(),
-        getStudentBookings(),
-        getStudentFines(),
-        getStudentDebt(),
+        getStudentBookings(user.id),
+        getStudentFines(user.id),
+        getStudentDebt(user.id),
       ]);
 
       if (slotsRes.success) {

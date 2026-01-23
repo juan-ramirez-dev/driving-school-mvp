@@ -43,7 +43,7 @@ function mapBackendRoleToFrontend(backendRole: string): "student" | "admin" | "t
  * Maps identification field to document for backend
  * Token is automatically saved by the API client
  */
-export async function login(username: string, password: string, identification?: string): Promise<User> {
+export async function login(document: string, password: string): Promise<User> {
   try {
     const baseUrl = getApiBaseUrl();
     const response = await fetch(`${baseUrl}/login`, {
@@ -52,7 +52,7 @@ export async function login(username: string, password: string, identification?:
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        document: identification || username, // Use identification as document, fallback to username
+        document: document,
         password: password,
       }),
     });
@@ -75,9 +75,9 @@ export async function login(username: string, password: string, identification?:
     // Map backend user to frontend User format
     const frontendUser: User = {
       id: String(backendUser.id),
-      username: backendUser.document || backendUser.email || username,
+      username: backendUser.document || backendUser.email || document,
       email: backendUser.email || `${backendUser.document}@example.com`,
-      name: backendUser.name || backendUser.last_name ? `${backendUser.name} ${backendUser.last_name}`.trim() : username,
+      name: backendUser.name || backendUser.last_name ? `${backendUser.name} ${backendUser.last_name}`.trim() : document,
       legalId: backendUser.document,
       role: mapBackendRoleToFrontend(backendUser.role),
     };

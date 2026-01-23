@@ -38,13 +38,14 @@ export async function bookClass(
 
 /**
  * GET /student/bookings
+ * Note: studentId is only used in mock mode. Real API uses authenticated user.
  */
 export async function getStudentBookings(
-  studentId: string
+  studentId?: string
 ): Promise<ApiResponse<StudentBooking[]>> {
   return isMockMode()
-    ? mockApi.getStudentBookings(studentId)
-    : realApi.getStudentBookings(studentId);
+    ? mockApi.getStudentBookings(studentId || "")
+    : realApi.getStudentBookings();
 }
 
 /**
@@ -60,22 +61,24 @@ export async function cancelBooking(
 
 /**
  * GET /student/fines
+ * Note: studentId is only used in mock mode. Real API uses authenticated user.
  */
 export async function getStudentFines(
-  studentId: string
+  studentId?: string
 ): Promise<ApiResponse<Fine[]>> {
   return isMockMode()
-    ? mockApi.getStudentFines(studentId)
-    : realApi.getStudentFines(studentId);
+    ? mockApi.getStudentFines(studentId || "")
+    : realApi.getStudentFines();
 }
 
 /**
  * GET /student/debt
+ * Note: studentId is only used in mock mode. Real API uses authenticated user.
  */
 export async function getStudentDebt(
-  studentId: string
+  studentId?: string
 ): Promise<ApiResponse<StudentDebt>> {
   return isMockMode()
-    ? mockApi.getStudentDebt(studentId)
-    : realApi.getStudentDebt(studentId);
+    ? mockApi.getStudentDebt(studentId || "")
+    : realApi.getStudentDebt();
 }

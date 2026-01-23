@@ -12,9 +12,8 @@ import { toast } from "sonner";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [username, setUsername] = useState("");
+  const [document, setDocument] = useState("");
   const [password, setPassword] = useState("");
-  const [identification, setIdentification] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -24,7 +23,7 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const user = await login(username, password, identification);
+      const user = await login(document, password);
       toast.success("¡Inicio de sesión exitoso!");
       
       // Redirect based on backend role (mapped to frontend role)
@@ -69,25 +68,13 @@ export default function LoginPage() {
               </Alert>
             )}
             <div className="space-y-2">
-              <Label htmlFor="username">Usuario</Label>
+              <Label htmlFor="document">Documento de Identidad</Label>
               <Input
-                id="username"
+                id="document"
                 type="text"
-                placeholder="Ingresa tu usuario"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required
-                disabled={isLoading}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="identification">Identificación</Label>
-              <Input
-                id="identification"
-                type="text"
-                placeholder="Ingresa tu identificación"
-                value={identification}
-                onChange={(e) => setIdentification(e.target.value)}
+                placeholder="Ingresa tu número de documento"
+                value={document}
+                onChange={(e) => setDocument(e.target.value)}
                 required
                 disabled={isLoading}
               />
