@@ -41,26 +41,40 @@ export function clearAuthToken(): void {
 }
 
 /**
- * Default fetch options with common headers
+ * Get standard API headers with Content-Type, Accept, and Authorization
+ * This utility function can be used for all API endpoints
+ * @param includeAuth - Whether to include Authorization header (default: true)
+ * @returns HeadersInit object with standard headers
  */
-function getDefaultHeaders(): HeadersInit {
+export function getApiHeaders(includeAuth: boolean = true): HeadersInit {
   const headers: HeadersInit = {
     "Content-Type": "application/json",
+    "Accept": "application/json",
   };
 
-  // Add Bearer token from auth if available
-  const token = getAuthToken();
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  } else {
-    // Fallback to API key if no token (for development/testing)
-    const apiKey = process.env.NEXT_PUBLIC_API_KEY;
-    if (apiKey) {
-      headers["Authorization"] = `Bearer ${apiKey}`;
+  if (includeAuth) {
+    // Add Bearer token from auth if available
+    const token = getAuthToken();
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    } else {
+      // Fallback to API key if no token (for development/testing)
+      const apiKey = process.env.NEXT_PUBLIC_API_KEY;
+      if (apiKey) {
+        headers["Authorization"] = `Bearer ${apiKey}`;
+      }
     }
   }
 
   return headers;
+}
+
+/**
+ * Default fetch options with common headers
+ * @deprecated Use getApiHeaders() instead for consistency
+ */
+function getDefaultHeaders(): HeadersInit {
+  return getApiHeaders();
 }
 
 /**

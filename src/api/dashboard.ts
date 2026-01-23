@@ -3,7 +3,7 @@
  * Makes actual HTTP requests to backend endpoints
  */
 
-import { apiGet } from "./client";
+import { apiGet, getApiHeaders } from "./client";
 import { ApiResponse } from "../utils/errorHandler";
 import { Reservation, RUNTExportData } from "../mocks/types";
 import { getApiBaseUrl } from "../config/api.config";
@@ -94,16 +94,10 @@ export async function getCompletedReservations(
 export async function exportRUNT(): Promise<ApiResponse<Blob>> {
   try {
     const baseUrl = getApiBaseUrl();
-    const token = typeof window !== "undefined" ? localStorage.getItem("driving-school-token") : null;
-    
-    const headers: HeadersInit = {};
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
     
     const response = await fetch(`${baseUrl}/dashboard/export-runt`, {
       method: "GET",
-      headers,
+      headers: getApiHeaders(true), // Include auth token
     });
     
     if (!response.ok) {

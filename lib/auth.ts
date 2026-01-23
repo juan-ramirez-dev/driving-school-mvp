@@ -1,6 +1,6 @@
 import type { User } from "./types";
 import { getApiBaseUrl } from "@/src/config/api.config";
-import { saveAuthToken, clearAuthToken } from "@/src/api/client";
+import { saveAuthToken, clearAuthToken, getApiHeaders } from "@/src/api/client";
 
 const STORAGE_KEY = "driving-school-user";
 const TOKEN_STORAGE_KEY = "driving-school-token";
@@ -48,9 +48,7 @@ export async function login(document: string, password: string): Promise<User> {
     const baseUrl = getApiBaseUrl();
     const response = await fetch(`${baseUrl}/login`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: getApiHeaders(false), // Don't include auth token for login
       body: JSON.stringify({
         document: document,
         password: password,
@@ -89,6 +87,7 @@ export async function login(document: string, password: string): Promise<User> {
 
     return frontendUser;
   } catch (error) {
+    console.error("Error al iniciar sesión:", error);
     const errorMessage = error instanceof Error ? error.message : "Error al iniciar sesión";
     throw new Error(errorMessage);
   }
@@ -110,9 +109,7 @@ export async function register(data: RegisterData): Promise<User> {
     const baseUrl = getApiBaseUrl();
     const response = await fetch(`${baseUrl}/register`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: getApiHeaders(false), // Don't include auth token for register
       body: JSON.stringify({
         name: data.name,
         document: data.document,
@@ -202,10 +199,7 @@ export async function logout(): Promise<void> {
       const baseUrl = getApiBaseUrl();
       await fetch(`${baseUrl}/logout`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
+        headers: getApiHeaders(true), // Include auth token for logout
       });
     } catch (error) {
       // Continue with local logout even if backend call fails
