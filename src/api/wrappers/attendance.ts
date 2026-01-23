@@ -27,8 +27,8 @@ export async function getTeacherClasses(
     }
     return mockApi.getTeacherClasses(teacherId, date);
   } else {
-    // Real API only needs date (uses authenticated user)
-    return realApi.getTeacherClasses(date);
+    // Real API needs date and teacher_id
+    return realApi.getTeacherClasses(date, teacherId);
   }
 }
 

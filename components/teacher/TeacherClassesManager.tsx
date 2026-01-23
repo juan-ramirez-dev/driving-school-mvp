@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { getCurrentUser } from "@/lib/auth";
 import {
   Table,
   TableBody,
@@ -88,7 +89,17 @@ export function TeacherClassesManager({ teacherId }: TeacherClassesManagerProps)
   const loadClasses = async () => {
     try {
       setIsLoading(true);
-      const result = await getTeacherClasses(selectedDate, teacherId);
+      // Get current user ID (teacher is the logged-in user)
+      const currentUser = getCurrentUser();
+      const currentTeacherId = teacherId || currentUser?.id;
+      
+      if (!currentTeacherId) {
+        toast.error("No se pudo identificar al instructor");
+        return;
+      }
+      
+      const result = await getTeacherClasses(selectedDate, currentTeacherId);
+      console.log(result);
       if (result.success) {
         setTheoreticalClasses(result.data.theoreticalClasses);
         setPracticalClasses(result.data.practicalClasses);

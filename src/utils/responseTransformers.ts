@@ -42,50 +42,64 @@ export function transformDashboardReservations(
 
 /**
  * Transform teacher classes response
- * Backend: Flat array of appointments
+ * Backend: { teacher_id, date, theoretical: [], practical: [] }
  * Frontend: { theoreticalClasses: [], practicalClasses: [] }
  */
 export function transformTeacherClasses(
-  backendResponse: any[]
+  backendResponse: any
 ): TeacherClassesResponse {
-  const theoreticalClasses: any[] = [];
-  const practicalClasses: any[] = [];
-
-  backendResponse.forEach((appointment) => {
-    // Determine if theoretical or practical based on class_type_id or classType
-    const classTypeId = appointment.class_type_id;
-    const isTheoretical = classTypeId === 1 || classTypeId === "1";
-
-    const classData = {
-      id: String(appointment.id),
-      teacherId: String(appointment.teacher_id),
-      date: appointment.date,
-      startTime: appointment.start_time?.substring(0, 5) || appointment.start_time,
-      endTime: appointment.end_time?.substring(0, 5) || appointment.end_time,
-      student: appointment.student
-        ? {
-            studentId: String(appointment.student.id),
-            name: appointment.student.name,
-            legalId: appointment.student.document || appointment.student.legalId,
-            phone: appointment.student.number_phone || appointment.student.phone,
-          }
-        : undefined,
-      students: appointment.students || [],
-      attendanceStatus: appointment.attendance_status || "pending",
-      canCancelWithoutReason: true,
-      isCancelled: appointment.status === "cancelled",
-    };
-
-    if (isTheoretical) {
-      theoreticalClasses.push(classData);
-    } else {
-      practicalClasses.push(classData);
-    }
-  });
+  // Handle both object format and array format for backward compatibility
+  let theoretical: any[] = [];
+  let practical: any[] = [];
+  
+  if (Array.isArray(backendResponse)) {
+    // Old format: flat array of appointments
+    backendResponse.forEach((appointment) => {
+      const classTypeId = appointment.class_type_id;
+      const isTheoretical = classTypeId === 1 || classTypeId === "1";
+      
+      const classData = transformAppointmentToClass(appointment);
+      
+      if (isTheoretical) {
+        theoretical.push(classData);
+      } else {
+        practical.push(classData);
+      }
+    });
+  } else if (backendResponse && typeof backendResponse === "object") {
+    // New format: { teacher_id, date, theoretical: [], practical: [] }
+    theoretical = (backendResponse.theoretical || []).map(transformAppointmentToClass);
+    practical = (backendResponse.practical || []).map(transformAppointmentToClass);
+  }
 
   return {
-    theoreticalClasses,
-    practicalClasses,
+    theoreticalClasses: theoretical,
+    practicalClasses: practical,
+  };
+}
+
+/**
+ * Transform a single appointment to class format
+ */
+function transformAppointmentToClass(appointment: any): any {
+  return {
+    id: String(appointment.id),
+    teacherId: String(appointment.teacher_id || appointment.teacherId),
+    date: appointment.date,
+    startTime: appointment.start_time?.substring(0, 5) || appointment.startTime || appointment.start_time,
+    endTime: appointment.end_time?.substring(0, 5) || appointment.endTime || appointment.end_time,
+    student: appointment.student
+      ? {
+          studentId: String(appointment.student.id),
+          name: appointment.student.name,
+          legalId: appointment.student.document || appointment.student.legalId,
+          phone: appointment.student.number_phone || appointment.student.phone,
+        }
+      : undefined,
+    students: appointment.students || [],
+    attendanceStatus: appointment.attendance_status || appointment.attendanceStatus || "pending",
+    canCancelWithoutReason: true,
+    isCancelled: appointment.status === "cancelled" || appointment.isCancelled === true,
   };
 }
 
@@ -97,6 +111,7 @@ export function transformTeacherClasses(
 export function transformAvailableSlots(backendResponse: any[]): AvailableSlot[] {
   const slots: AvailableSlot[] = [];
 
+  console.log(backendResponse);
   backendResponse.forEach((teacherSlot) => {
     const teacherId = String(teacherSlot.teacher_id);
     const teacherName = teacherSlot.teacher_name || "Instructor";
@@ -131,7 +146,7 @@ export function transformStudentBookings(
   backendResponse: any[]
 ): StudentBooking[] {
   return backendResponse.map((appointment) => ({
-    id: String(appointment.id),
+    id: String(appointment.id), 
     studentId: String(appointment.student_id),
     classType:
       appointment.class_type_id === 1 ? "theoretical" : "practical",
@@ -260,6 +275,7 @@ export function transformTeachers(backendResponse: any[]): Teacher[] {
 export function transformTeacherAvailability(backendResponse: any[]): TeacherAvailability[] {
   const availability: TeacherAvailability[] = [];
   
+  console.log(backendResponse);
   backendResponse.forEach((teacherData: any) => {
     const teacherId = String(teacherData.teacher_id);
     const schedules = teacherData.schedules || [];

@@ -12,15 +12,38 @@ import type {
 } from "../mocks/attendance";
 
 /**
- * GET /teacher/classes?date=:date
- * Returns theoretical and practical classes for authenticated teacher and date
- * Note: teacherId removed - backend uses authenticated user
+ * GET /teacher/classes?date=:date&teacher_id=:teacher_id
+ * Returns theoretical and practical classes for a teacher and date
+ * Note: teacher_id is required - should be the logged-in user's ID
  */
 export async function getTeacherClasses(
-  date: string
+  date: string,
+  teacherId?: string
 ): Promise<ApiResponse<TeacherClassesResponse>> {
-  const response = await apiGet<any[]>(
-    `/teacher/classes?date=${date}`
+  // Get current user ID if teacherId not provided
+  let currentTeacherId = teacherId;
+  if (!currentTeacherId && typeof window !== "undefined") {
+    const { getCurrentUser } = await import("../../lib/auth");
+    const user = getCurrentUser();
+    currentTeacherId = user?.id;
+  }
+  
+  if (!currentTeacherId) {
+    return {
+      success: false,
+      message: "Teacher ID is required",
+      code: 400,
+    };
+  }
+  
+  // Build query string with date and teacher_id
+  const params = new URLSearchParams({ 
+    date,
+    teacherId: currentTeacherId,
+  });
+  
+  const response = await apiGet<any>(
+    `/teacher/classes?${params.toString()}`
   );
   
   if (response.success && response.data) {
