@@ -28,8 +28,10 @@ export interface Classroom {
 export interface Teacher {
   id: string;
   name: string;
+  last_name?: string;
   email: string;
   phone: string;
+  document?: string;
   licenseNumber: string;
   isActive: boolean;
   createdAt: string;
@@ -39,6 +41,7 @@ export interface Teacher {
 export interface Student {
   id: string;
   name: string;
+  last_name?: string;
   email: string;
   phone: string;
   legalId: string;

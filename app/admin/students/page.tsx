@@ -341,10 +341,12 @@ export default function StudentsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Nombre</TableHead>
+                <TableHead>Apellido</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Teléfono</TableHead>
                 <TableHead>Identificación</TableHead>
                 <TableHead>Fecha Nacimiento</TableHead>
+                <TableHead>Dirección</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
@@ -352,20 +354,22 @@ export default function StudentsPage() {
             <TableBody>
               {students.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground">
+                  <TableCell colSpan={9} className="text-center text-muted-foreground">
                     No hay estudiantes registrados
                   </TableCell>
                 </TableRow>
               ) : (
                 students.map((student) => (
                   <TableRow key={student.id}>
-                    <TableCell className="font-medium">{student.name}</TableCell>
+                    <TableCell className="font-medium">{student.name || "-"}</TableCell>
+                    <TableCell>{student.last_name || "-"}</TableCell>
                     <TableCell>{student.email}</TableCell>
                     <TableCell>{student.phone}</TableCell>
                     <TableCell>{student.legalId}</TableCell>
                     <TableCell>
                       {new Date(student.dateOfBirth).toLocaleDateString()}
                     </TableCell>
+                    <TableCell>{student.address || "-"}</TableCell>
                     <TableCell>
                       <span
                         className={`px-2 py-1 rounded text-xs ${

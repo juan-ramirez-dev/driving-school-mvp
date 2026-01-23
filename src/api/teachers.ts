@@ -5,7 +5,7 @@
 
 import { apiGet, apiPost, apiPut, apiDelete } from "./client";
 import { ApiResponse } from "../utils/errorHandler";
-import { Teacher, TeacherAvailability } from "../mocks/types";
+import { Teacher, TeacherAvailability, TimeBlockSize } from "../mocks/types";
 
 /**
  * GET /teachers
@@ -13,7 +13,17 @@ import { Teacher, TeacherAvailability } from "../mocks/types";
  * Note: Data extraction from nested structure is handled automatically in apiRequest
  */
 export async function getTeachers(): Promise<ApiResponse<Teacher[]>> {
-  return apiGet<Teacher[]>("/teachers");
+  const response = await apiGet<any[]>("/teachers");
+  
+  if (response.success && response.data) {
+    const { transformTeachers } = await import("../utils/responseTransformers");
+    return {
+      ...response,
+      data: transformTeachers(response.data),
+    };
+  }
+  
+  return response as ApiResponse<Teacher[]>;
 }
 
 /**
@@ -31,7 +41,19 @@ export async function createTeacher(
     licenseNumber: string;
   }
 ): Promise<ApiResponse<Teacher>> {
-  return apiPost<Teacher>("/teachers", data);
+  const response = await apiPost<any>("/teachers", data);
+  
+  if (response.success && response.data) {
+    const { transformTeachers } = await import("../utils/responseTransformers");
+    // Transform single teacher response
+    const transformed = transformTeachers([response.data]);
+    return {
+      ...response,
+      data: transformed[0],
+    };
+  }
+  
+  return response as ApiResponse<Teacher>;
 }
 
 /**
@@ -51,7 +73,19 @@ export async function updateTeacher(
     isActive: boolean;
   }>
 ): Promise<ApiResponse<Teacher>> {
-  return apiPut<Teacher>(`/teachers/${id}`, data);
+  const response = await apiPut<any>(`/teachers/${id}`, data);
+  
+  if (response.success && response.data) {
+    const { transformTeachers } = await import("../utils/responseTransformers");
+    // Transform single teacher response
+    const transformed = transformTeachers([response.data]);
+    return {
+      ...response,
+      data: transformed[0],
+    };
+  }
+  
+  return response as ApiResponse<Teacher>;
 }
 
 /**
@@ -71,15 +105,72 @@ export async function deleteTeacher(
 export async function getTeacherAvailability(): Promise<
   ApiResponse<TeacherAvailability[]>
 > {
-  return apiGet<TeacherAvailability[]>("/teachers/availability");
+  const response = await apiGet<any[]>("/teachers/availability/all");
+  
+  if (response.success && response.data) {
+    const { transformTeacherAvailability } = await import("../utils/responseTransformers");
+    return {
+      ...response,
+      data: transformTeacherAvailability(response.data),
+    };
+  }
+  
+  return response as ApiResponse<TeacherAvailability[]>;
 }
 
 /**
  * POST /teachers/availability
  * Sets teacher availability by time blocks
+ * Backend expects: { user_id, availability: [{ date, start_time, end_time, day_of_week, slot_minutes }] }
  */
 export async function setTeacherAvailability(
   data: Omit<TeacherAvailability, "availableSlots">
 ): Promise<ApiResponse<TeacherAvailability>> {
-  return apiPost<TeacherAvailability>("/teachers/availability", data);
+  // Convert blockSize to slot_minutes
+  const blockSizeToMinutes: Record<TimeBlockSize, number> = {
+    "15min": 15,
+    "30min": 30,
+    "1h": 60,
+    "2h": 120,
+  };
+  const slotMinutes = blockSizeToMinutes[data.blockSize] || 60;
+  
+  // Convert date to day_of_week (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
+  const dateObj = new Date(data.date);
+  const dayOfWeek = dateObj.getDay(); // 0-6
+  
+  // Transform frontend format to backend format
+  const backendData = {
+    user_id: data.teacherId,
+    availability: [
+      {
+        date: data.date,
+        start_time: data.startTime,
+        end_time: data.endTime,
+        day_of_week: dayOfWeek,
+        slot_minutes: slotMinutes,
+      },
+    ],
+  };
+  
+  const response = await apiPost<any>("/teachers/availability/all", backendData);
+  
+  if (response.success && response.data) {
+    const { transformTeacherAvailability } = await import("../utils/responseTransformers");
+    // Transform response back to frontend format
+    const transformed = transformTeacherAvailability([response.data]);
+    return {
+      ...response,
+      data: transformed[0] || {
+        teacherId: data.teacherId,
+        date: data.date,
+        startTime: data.startTime,
+        endTime: data.endTime,
+        blockSize: data.blockSize,
+        availableSlots: [],
+      },
+    };
+  }
+  
+  return response as ApiResponse<TeacherAvailability>;
 }

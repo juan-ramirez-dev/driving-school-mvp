@@ -349,6 +349,8 @@ export default function TeachersPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Nombre</TableHead>
+                <TableHead>Apellido</TableHead>
+                <TableHead>Documento</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Teléfono</TableHead>
                 <TableHead>Licencia</TableHead>
@@ -359,14 +361,16 @@ export default function TeachersPage() {
             <TableBody>
               {teachers && teachers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center text-muted-foreground">
                     No hay instructores registrados
                   </TableCell>
                 </TableRow>
               ) : (
                 teachers.map((teacher) => (
                   <TableRow key={teacher?.id}>
-                    <TableCell className="font-medium">{teacher?.name}</TableCell>
+                    <TableCell className="font-medium">{teacher?.name || "-"}</TableCell>
+                    <TableCell>{teacher?.last_name || "-"}</TableCell>
+                    <TableCell>{teacher?.document || "-"}</TableCell>
                     <TableCell>{teacher?.email}</TableCell>
                     <TableCell>{teacher?.phone}</TableCell>
                     <TableCell>{teacher?.licenseNumber}</TableCell>

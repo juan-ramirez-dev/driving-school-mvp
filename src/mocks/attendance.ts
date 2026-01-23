@@ -241,7 +241,7 @@ export async function updateAttendance(
     if (theoreticalClass) {
       // For theoretical classes, update all students' attendance
       theoreticalClass.students.forEach((student) => {
-        student.attendanceStatus = status;
+      student.attendanceStatus = status;
       });
     } else {
       // Try practical classes
@@ -296,12 +296,12 @@ export async function cancelClass(
     if (theoreticalClass) {
       // Check if reason is required (when teacher doesn't have permission to cancel without reason)
       if (!theoreticalClass.canCancelWithoutReason && !reason) {
-        return handleError(
-          "Cancellation reason is required when teacher lacks permission",
-          "Validation failed",
-          HttpErrorCode.BAD_REQUEST
-        );
-      }
+      return handleError(
+        "Cancellation reason is required when teacher lacks permission",
+        "Validation failed",
+        HttpErrorCode.BAD_REQUEST
+      );
+    }
       theoreticalClass.isCancelled = true;
     } else {
       // Try practical classes

@@ -12,7 +12,17 @@ import { Student } from "../mocks/types";
  * Returns a list of students
  */
 export async function getStudents(): Promise<ApiResponse<Student[]>> {
-  return apiGet<Student[]>("/students");
+  const response = await apiGet<any[]>("/students");
+  
+  if (response.success && response.data) {
+    const { transformStudents } = await import("../utils/responseTransformers");
+    return {
+      ...response,
+      data: transformStudents(response.data),
+    };
+  }
+  
+  return response as ApiResponse<Student[]>;
 }
 
 /**
@@ -31,7 +41,19 @@ export async function createStudent(
     address: string;
   }
 ): Promise<ApiResponse<Student>> {
-  return apiPost<Student>("/students", data);
+  const response = await apiPost<any>("/students", data);
+  
+  if (response.success && response.data) {
+    const { transformStudents } = await import("../utils/responseTransformers");
+    // Transform single student response
+    const transformed = transformStudents([response.data]);
+    return {
+      ...response,
+      data: transformed[0],
+    };
+  }
+  
+  return response as ApiResponse<Student>;
 }
 
 /**
@@ -52,7 +74,19 @@ export async function updateStudent(
     isActive: boolean;
   }>
 ): Promise<ApiResponse<Student>> {
-  return apiPut<Student>(`/students/${id}`, data);
+  const response = await apiPut<any>(`/students/${id}`, data);
+  
+  if (response.success && response.data) {
+    const { transformStudents } = await import("../utils/responseTransformers");
+    // Transform single student response
+    const transformed = transformStudents([response.data]);
+    return {
+      ...response,
+      data: transformed[0],
+    };
+  }
+  
+  return response as ApiResponse<Student>;
 }
 
 /**
