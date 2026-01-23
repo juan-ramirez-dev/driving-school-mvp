@@ -62,13 +62,17 @@ export interface StudentDebt {
 }
 
 export interface BookClassPayload {
-  studentId: string;
-  slotId: string;
+  teacher_id: number;
+  class_type_id: number;
+  resource_id?: number;
+  date: string; // YYYY-MM-DD
+  start_time: string; // HH:mm
+  end_time: string; // HH:mm
 }
 
 export interface CancelBookingPayload {
-  studentId: string;
-  bookingId: string;
+  appointment_id: number;
+  reason?: string;
 }
 
 // Storage keys

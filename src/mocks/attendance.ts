@@ -209,10 +209,8 @@ export async function getTeacherClasses(
 }
 
 export interface UpdateAttendancePayload {
-  classId: string;
-  classType: ClassType;
-  studentId: string;
-  status: AttendanceStatus;
+  appointment_id: number;
+  attended: boolean;
 }
 
 /**
@@ -285,9 +283,7 @@ export async function updateAttendance(
 }
 
 export interface CancelClassPayload {
-  classId: string;
-  classType: ClassType;
-  teacherHasPermission: boolean;
+  appointment_id: number;
   reason?: string;
 }
 

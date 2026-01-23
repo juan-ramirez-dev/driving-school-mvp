@@ -20,6 +20,7 @@ export * from "./wrappers/students";
 export * from "./wrappers/dashboard";
 export * from "./wrappers/attendance";
 export * from "./wrappers/student";
+export * from "./wrappers/resources";
 
 // Export configuration utilities
 export {

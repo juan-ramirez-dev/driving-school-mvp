@@ -12,34 +12,52 @@ import type {
 } from "../mocks/attendance";
 
 /**
- * GET /teacher/classes?teacherId=:id&date=:date
- * Returns theoretical and practical classes for a teacher and date
+ * GET /teacher/classes?date=:date
+ * Returns theoretical and practical classes for authenticated teacher and date
+ * Note: teacherId removed - backend uses authenticated user
  */
 export async function getTeacherClasses(
-  teacherId: string,
   date: string
 ): Promise<ApiResponse<TeacherClassesResponse>> {
-  return apiGet<TeacherClassesResponse>(
-    `/teacher/classes?teacherId=${teacherId}&date=${date}`
+  const response = await apiGet<any[]>(
+    `/teacher/classes?date=${date}`
   );
+  
+  if (response.success && response.data) {
+    const { transformTeacherClasses } = await import("../utils/responseTransformers");
+    return {
+      ...response,
+      data: transformTeacherClasses(response.data),
+    };
+  }
+  
+  return response as ApiResponse<TeacherClassesResponse>;
 }
 
 /**
  * POST /teacher/classes/attendance
  * Updates attendance status for a student in a class
+ * Payload transformed: { classId, classType, studentId, status } -> { appointment_id, attended: boolean }
  */
 export async function updateAttendance(
   payload: UpdateAttendancePayload
 ): Promise<ApiResponse<{ message: string }>> {
+  // Payload is already in backend format: { appointment_id, attended: boolean }
   return apiPost<{ message: string }>("/teacher/classes/attendance", payload);
 }
 
 /**
  * POST /teacher/classes/cancel
  * Cancels a class (with optional justification)
+ * Payload transformed: { classId, classType, teacherHasPermission, reason } -> { appointment_id, reason }
  */
 export async function cancelClass(
   payload: CancelClassPayload
 ): Promise<ApiResponse<{ message: string }>> {
-  return apiPost<{ message: string }>("/teacher/classes/cancel", payload);
+  // Ensure reason is always provided (use empty string if not)
+  const backendPayload = {
+    appointment_id: payload.appointment_id,
+    reason: payload.reason || "",
+  };
+  return apiPost<{ message: string }>("/teacher/classes/cancel", backendPayload);
 }

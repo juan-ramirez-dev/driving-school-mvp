@@ -27,10 +27,11 @@ export default function LoginPage() {
       const user = await login(username, password, identification);
       toast.success("¡Inicio de sesión exitoso!");
       
-      // Redirect based on role
-      if (isAdmin()) {
+      // Redirect based on backend role (mapped to frontend role)
+      // Backend roles: "user" -> student, "docente" -> teacher
+      if (user.role === "admin") {
         router.push("/admin/dashboard");
-      } else if (isTeacher()) {
+      } else if (user.role === "teacher") {
         router.push("/teacher/dashboard");
       } else {
         router.push("/student/dashboard");

@@ -1,6 +1,9 @@
 import type { User } from "./types";
+import { getApiBaseUrl } from "@/src/config/api.config";
+import { saveAuthToken, clearAuthToken } from "@/src/api/client";
 
 const STORAGE_KEY = "driving-school-user";
+const TOKEN_STORAGE_KEY = "driving-school-token";
 
 // Mock users for demo purposes
 const MOCK_USERS: User[] = [
@@ -22,96 +25,160 @@ const MOCK_USERS: User[] = [
   },
 ];
 
-// Simple mock authentication - accepts any username/password
-export function login(username: string, password: string, identification?: string): Promise<User> {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      // Check for admin login
-      if (username === "admin" && password === "admin") {
-        const adminUser: User = {
-          id: "admin-1",
-          username: "admin",
-          email: "admin@drivingschool.com",
-          name: "Administrador",
-          role: "admin",
-        };
+/**
+ * Map backend role to frontend role
+ */
+function mapBackendRoleToFrontend(backendRole: string): "student" | "admin" | "teacher" {
+  if (backendRole === "docente") {
+    return "teacher";
+  }
+  if (backendRole === "admin" || backendRole === "administrator") {
+    return "admin";
+  }
+  return "student"; // Default to student for "user" or any other role
+}
 
-        // Save admin user to localStorage
-        if (typeof window !== "undefined") {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(adminUser));
-        }
+/**
+ * Login using backend API
+ * Maps identification field to document for backend
+ * Token is automatically saved by the API client
+ */
+export async function login(username: string, password: string, identification?: string): Promise<User> {
+  try {
+    const baseUrl = getApiBaseUrl();
+    const response = await fetch(`${baseUrl}/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        document: identification || username, // Use identification as document, fallback to username
+        password: password,
+      }),
+    });
 
-        resolve(adminUser);
-        return;
-      }
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const errorMessage = errorData.message || errorData.errors?.document?.[0] || "Credenciales incorrectas";
+      throw new Error(errorMessage);
+    }
 
-      // Check for teacher login
-      if (username === "teacher" && password === "teacher") {
-        const teacherUser: User = {
-          id: "teacher-1",
-          username: "teacher",
-          email: "teacher@drivingschool.com",
-          name: "Instructor",
-          role: "teacher",
-        };
+    const data = await response.json();
+    const backendUser = data.user;
+    const token = data.token;
 
-        // Save teacher user to localStorage
-        if (typeof window !== "undefined") {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(teacherUser));
-        }
+    // Save token using centralized function from API client
+    if (token) {
+      saveAuthToken(token);
+    }
 
-        resolve(teacherUser);
-        return;
-      }
+    // Map backend user to frontend User format
+    const frontendUser: User = {
+      id: String(backendUser.id),
+      username: backendUser.document || backendUser.email || username,
+      email: backendUser.email || `${backendUser.document}@example.com`,
+      name: backendUser.name || backendUser.last_name ? `${backendUser.name} ${backendUser.last_name}`.trim() : username,
+      legalId: backendUser.document,
+      role: mapBackendRoleToFrontend(backendUser.role),
+    };
 
-      // Find user by username or create a new one
-      let user = MOCK_USERS.find((u) => u.username === username);
+    // Store user in localStorage
+    if (typeof window !== "undefined") {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(frontendUser));
+    }
 
-      if (!user) {
-        // Create a new user for demo purposes
-        user = {
-          id: `${MOCK_USERS.length + 1}`,
-          username,
-          email: `${username}@example.com`,
-          name: username.charAt(0).toUpperCase() + username.slice(1),
-          legalId: identification || `${Math.floor(Math.random() * 90000000) + 10000000}${String.fromCharCode(65 + Math.floor(Math.random() * 26))}`,
-          role: "student",
-        };
-        MOCK_USERS.push(user);
-      } else if (identification) {
-        // Update existing user's identification if provided
-        user.legalId = identification;
-      }
+    return frontendUser;
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Error al iniciar sesión";
+    throw new Error(errorMessage);
+  }
+}
 
-      // Simple validation - just check that username and password are provided
-      if (!username || !password) {
-        reject(new Error("Se requiere usuario y contraseña"));
-        return;
-      }
+/**
+ * Register new user using backend API
+ * Token is automatically saved by the API client
+ */
+export interface RegisterData {
+  name: string;
+  document: string;
+  password: string;
+  password_confirmation: string;
+}
 
-      // Save user to localStorage
-      if (typeof window !== "undefined") {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
-      }
+export async function register(data: RegisterData): Promise<User> {
+  try {
+    const baseUrl = getApiBaseUrl();
+    const response = await fetch(`${baseUrl}/register`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: data.name,
+        document: data.document,
+        password: data.password,
+        password_confirmation: data.password_confirmation,
+      }),
+    });
 
-      resolve(user);
-    }, 500); // Simulate API delay
-  });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const errorMessage = errorData.message || errorData.errors?.document?.[0] || errorData.errors?.password?.[0] || "Error al registrar usuario";
+      throw new Error(errorMessage);
+    }
+
+    const responseData = await response.json();
+    const backendUser = responseData.user;
+    const token = responseData.token;
+
+    // Save token using centralized function from API client
+    if (token) {
+      saveAuthToken(token);
+    }
+
+    // Map backend user to frontend User format
+    const frontendUser: User = {
+      id: String(backendUser.id),
+      username: backendUser.document || backendUser.email || data.document,
+      email: backendUser.email || `${backendUser.document}@example.com`,
+      name: backendUser.name || data.name,
+      legalId: backendUser.document || data.document,
+      role: mapBackendRoleToFrontend(backendUser.role),
+    };
+
+    // Store user in localStorage
+    if (typeof window !== "undefined") {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(frontendUser));
+    }
+
+    return frontendUser;
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Error al registrar usuario";
+    throw new Error(errorMessage);
+  }
+}
+
+/**
+ * Get authentication token from localStorage
+ */
+export function getAuthToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(TOKEN_STORAGE_KEY);
 }
 
 export function isAdmin(): boolean {
   const user = getCurrentUser();
-  return user?.role === "admin" || user?.username === "admin";
+  return user?.role === "admin";
 }
 
 export function isTeacher(): boolean {
   const user = getCurrentUser();
-  return user?.role === "teacher" || user?.username === "teacher";
+  return user?.role === "teacher";
 }
 
 export function isStudent(): boolean {
   const user = getCurrentUser();
-  return user?.role === "student" || (!user?.role && user?.username !== "admin" && user?.username !== "teacher");
+  return user?.role === "student";
 }
 
 export function getUserRole(): "student" | "admin" | "teacher" | null {
@@ -123,9 +190,33 @@ export function getUserRole(): "student" | "admin" | "teacher" | null {
   return "student";
 }
 
-export function logout(): void {
+/**
+ * Logout and clear session from backend
+ */
+export async function logout(): Promise<void> {
+  const token = getAuthToken();
+  
+  // Call backend logout if token exists
+  if (token && typeof window !== "undefined") {
+    try {
+      const baseUrl = getApiBaseUrl();
+      await fetch(`${baseUrl}/logout`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      });
+    } catch (error) {
+      // Continue with local logout even if backend call fails
+      console.error("Error calling logout endpoint:", error);
+    }
+  }
+
+  // Clear local storage using centralized function
   if (typeof window !== "undefined") {
     localStorage.removeItem(STORAGE_KEY);
+    clearAuthToken();
   }
 }
 

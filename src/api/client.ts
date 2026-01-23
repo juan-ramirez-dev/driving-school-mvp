@@ -11,6 +11,35 @@ import {
 } from "../utils/errorHandler";
 import { getApiBaseUrl } from "../config/api.config";
 
+const TOKEN_STORAGE_KEY = "driving-school-token";
+
+/**
+ * Get authentication token from localStorage
+ */
+function getAuthToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(TOKEN_STORAGE_KEY);
+}
+
+/**
+ * Save authentication token to localStorage
+ * This is called automatically when login/register endpoints return a token
+ */
+export function saveAuthToken(token: string): void {
+  if (typeof window !== "undefined") {
+    localStorage.setItem(TOKEN_STORAGE_KEY, token);
+  }
+}
+
+/**
+ * Clear authentication token from localStorage
+ */
+export function clearAuthToken(): void {
+  if (typeof window !== "undefined") {
+    localStorage.removeItem(TOKEN_STORAGE_KEY);
+  }
+}
+
 /**
  * Default fetch options with common headers
  */
@@ -19,13 +48,30 @@ function getDefaultHeaders(): HeadersInit {
     "Content-Type": "application/json",
   };
 
-  // Add API key if configured
-  const apiKey = process.env.NEXT_PUBLIC_API_KEY;
-  if (apiKey) {
-    headers["Authorization"] = `Bearer ${apiKey}`;
+  // Add Bearer token from auth if available
+  const token = getAuthToken();
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  } else {
+    // Fallback to API key if no token (for development/testing)
+    const apiKey = process.env.NEXT_PUBLIC_API_KEY;
+    if (apiKey) {
+      headers["Authorization"] = `Bearer ${apiKey}`;
+    }
   }
 
   return headers;
+}
+
+/**
+ * Check if response contains auth token and save it automatically
+ * This handles login and register endpoints that return tokens
+ */
+function handleAuthTokenResponse(data: any): void {
+  // Check if response has token (from login/register endpoints)
+  if (data && typeof data === "object" && "token" in data && data.token) {
+    saveAuthToken(data.token);
+  }
 }
 
 /**
@@ -76,12 +122,22 @@ export async function apiGet<T>(endpoint: string): Promise<ApiResponse<T>> {
  */
 export async function apiPost<T>(
   endpoint: string,
-  body: unknown
+  body: unknown,
+  options?: { saveToken?: boolean }
 ): Promise<ApiResponse<T>> {
-  return apiRequest<T>(endpoint, {
+  const response = await apiRequest<T>(endpoint, {
     method: "POST",
     body: JSON.stringify(body),
   });
+
+  // Automatically save token if this is a login/register endpoint
+  if (options?.saveToken !== false && (endpoint === "/login" || endpoint === "/register")) {
+    if (response.success && response.data) {
+      handleAuthTokenResponse(response.data);
+    }
+  }
+
+  return response;
 }
 
 /**

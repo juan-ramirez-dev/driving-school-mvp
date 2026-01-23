@@ -48,7 +48,7 @@ import type {
 } from "@/src/mocks/attendance";
 
 interface TeacherClassesManagerProps {
-  teacherId: string;
+  teacherId?: string; // Optional now, backend uses authenticated user
 }
 
 export function TeacherClassesManager({ teacherId }: TeacherClassesManagerProps) {
@@ -80,15 +80,15 @@ export function TeacherClassesManager({ teacherId }: TeacherClassesManagerProps)
   const [cancelReason, setCancelReason] = useState("");
 
   useEffect(() => {
-    if (selectedDate && teacherId) {
+    if (selectedDate) {
       loadClasses();
     }
-  }, [selectedDate, teacherId]);
+  }, [selectedDate]);
 
   const loadClasses = async () => {
     try {
       setIsLoading(true);
-      const result = await getTeacherClasses(teacherId, selectedDate);
+      const result = await getTeacherClasses(selectedDate);
       if (result.success) {
         setTheoreticalClasses(result.data.theoreticalClasses);
         setPracticalClasses(result.data.practicalClasses);
@@ -127,11 +127,10 @@ export function TeacherClassesManager({ teacherId }: TeacherClassesManagerProps)
     if (!attendanceData) return;
 
     try {
+      // Transform to backend format: classId -> appointment_id, status -> attended boolean
       const payload: UpdateAttendancePayload = {
-        classId: attendanceData.classId,
-        classType: attendanceData.classType,
-        studentId: attendanceData.studentId,
-        status,
+        appointment_id: parseInt(attendanceData.classId),
+        attended: status === "attended",
       };
 
       const result = await updateAttendance(payload);
@@ -169,10 +168,9 @@ export function TeacherClassesManager({ teacherId }: TeacherClassesManagerProps)
     }
 
     try {
+      // Transform to backend format: classId -> appointment_id
       const payload: CancelClassPayload = {
-        classId: cancelData.classId,
-        classType: cancelData.classType,
-        teacherHasPermission: cancelData.canCancelWithoutReason,
+        appointment_id: parseInt(cancelData.classId),
         reason: cancelReason.trim() || undefined,
       };
 

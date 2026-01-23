@@ -89,11 +89,12 @@ export default function StudentDashboardPage() {
       setIsLoading(true);
 
       // Load all data in parallel
+      // Note: studentId removed - backend uses authenticated user
       const [slotsRes, bookingsRes, finesRes, debtRes] = await Promise.all([
         getAvailableSlots(),
-        getStudentBookings(user.id),
-        getStudentFines(user.id),
-        getStudentDebt(user.id),
+        getStudentBookings(),
+        getStudentFines(),
+        getStudentDebt(),
       ]);
 
       if (slotsRes.success) {
@@ -131,9 +132,16 @@ export default function StudentDashboardPage() {
     if (!user) return;
 
     try {
+      // Transform slot data to backend booking structure
+      const class_type_id = slot.classType === "theoretical" ? 1 : 2;
+      
       const response = await bookClass({
-        studentId: user.id,
-        slotId: slot.id,
+        teacher_id: parseInt(slot.teacherId),
+        class_type_id: class_type_id,
+        date: slot.date,
+        start_time: slot.startTime,
+        end_time: slot.endTime,
+        // resource_id will be fetched automatically by the API function
       });
 
       if (response.success) {
@@ -158,9 +166,10 @@ export default function StudentDashboardPage() {
     if (!user || !bookingToCancel) return;
 
     try {
+      // Transform to backend format: bookingId -> appointment_id
       const response = await cancelBooking({
-        studentId: user.id,
-        bookingId: bookingToCancel.id,
+        appointment_id: parseInt(bookingToCancel.id),
+        reason: "", // Optional, can be added later if needed
       });
 
       if (response.success) {
