@@ -55,7 +55,7 @@ export function CompletedReservationsChart() {
     try {
       const result = await getTeachers();
       if (result.success) {
-        setTeachers(result.data);
+        setTeachers(result?.data || []);
       }
     } catch (error) {
       console.error("Error loading teachers:", error);
@@ -102,7 +102,7 @@ export function CompletedReservationsChart() {
       if (teachersList.length === 0) {
         const teachersResult = await getTeachers();
         if (teachersResult.success) {
-          teachersList = teachersResult.data;
+          teachersList = teachersResult?.data || [];
           setTeachers(teachersList);
         }
       }
@@ -171,7 +171,7 @@ export function CompletedReservationsChart() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos los instructores</SelectItem>
-                {teachers.map((teacher) => (
+                {teachers && teachers?.map((teacher) => (
                   <SelectItem key={teacher.id} value={teacher.id}>
                     {teacher.name}
                   </SelectItem>

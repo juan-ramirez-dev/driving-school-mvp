@@ -48,7 +48,8 @@ export default function VehiclesPage() {
   const [vehicleToDelete, setVehicleToDelete] = useState<Vehicle | null>(null);
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
   const [formData, setFormData] = useState({
-    licensePlate: "",
+    name: "",
+    plate: "",
     brand: "",
     model: "",
     year: new Date().getFullYear(),
@@ -79,8 +80,14 @@ export default function VehiclesPage() {
   const handleOpenDialog = (vehicle?: Vehicle) => {
     if (vehicle) {
       setEditingVehicle(vehicle);
+      // Combine brand and model for name, or use model as name
+      const vehicleName = vehicle.brand && vehicle.model 
+        ? `${vehicle.brand} ${vehicle.model}`.trim()
+        : vehicle.model || vehicle.brand || "";
+      
       setFormData({
-        licensePlate: vehicle.licensePlate,
+        name: vehicleName,
+        plate: vehicle.licensePlate,
         brand: vehicle.brand,
         model: vehicle.model,
         year: vehicle.year,
@@ -89,7 +96,8 @@ export default function VehiclesPage() {
     } else {
       setEditingVehicle(null);
       setFormData({
-        licensePlate: "",
+        name: "",
+        plate: "",
         brand: "",
         model: "",
         year: new Date().getFullYear(),
@@ -103,7 +111,8 @@ export default function VehiclesPage() {
     setIsDialogOpen(false);
     setEditingVehicle(null);
     setFormData({
-      licensePlate: "",
+      name: "",
+      plate: "",
       brand: "",
       model: "",
       year: new Date().getFullYear(),
@@ -190,12 +199,24 @@ export default function VehiclesPage() {
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="licensePlate">Placa</Label>
+                <Label htmlFor="name">Nombre</Label>
                 <Input
-                  id="licensePlate"
-                  value={formData.licensePlate}
+                  id="name"
+                  value={formData.name}
                   onChange={(e) =>
-                    setFormData({ ...formData, licensePlate: e.target.value })
+                    setFormData({ ...formData, name: e.target.value })
+                  }
+                  placeholder="Ej: Mazda 2"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="plate">Placa</Label>
+                <Input
+                  id="plate"
+                  value={formData.plate}
+                  onChange={(e) =>
+                    setFormData({ ...formData, plate: e.target.value })
                   }
                   required
                 />
@@ -205,9 +226,17 @@ export default function VehiclesPage() {
                 <Input
                   id="brand"
                   value={formData.brand}
-                  onChange={(e) =>
-                    setFormData({ ...formData, brand: e.target.value })
-                  }
+                  onChange={(e) => {
+                    const newBrand = e.target.value;
+                    setFormData({ 
+                      ...formData, 
+                      brand: newBrand,
+                      // Auto-update name if it's currently brand + model format
+                      name: formData.name === `${formData.brand} ${formData.model}`.trim()
+                        ? `${newBrand} ${formData.model}`.trim()
+                        : formData.name
+                    });
+                  }}
                   required
                 />
               </div>
@@ -216,9 +245,17 @@ export default function VehiclesPage() {
                 <Input
                   id="model"
                   value={formData.model}
-                  onChange={(e) =>
-                    setFormData({ ...formData, model: e.target.value })
-                  }
+                  onChange={(e) => {
+                    const newModel = e.target.value;
+                    setFormData({ 
+                      ...formData, 
+                      model: newModel,
+                      // Auto-update name if it's currently brand + model format
+                      name: formData.name === `${formData.brand} ${formData.model}`.trim()
+                        ? `${formData.brand} ${newModel}`.trim()
+                        : formData.name
+                    });
+                  }}
                   required
                 />
               </div>

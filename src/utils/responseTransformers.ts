@@ -3,7 +3,7 @@
  * Transform backend API responses to match frontend expected formats
  */
 
-import type { Reservation } from "../mocks/types";
+import type { Reservation, Vehicle } from "../mocks/types";
 import type {
   StudentBooking,
   Fine,
@@ -196,4 +196,23 @@ export function transformStudentDebt(
     pendingPayments,
     fines: fines || [],
   };
+}
+
+/**
+ * Transform vehicles response
+ * Backend: { id, name, plate, brand, model, year, color, active, ... }
+ * Frontend: { id, licensePlate, brand, model, year, color, isActive, ... }
+ */
+export function transformVehicles(backendResponse: any[]): Vehicle[] {
+  return backendResponse.map((vehicle: any) => ({
+    id: String(vehicle.id),
+    licensePlate: vehicle.plate || vehicle.licensePlate || "",
+    brand: vehicle.brand || "",
+    model: vehicle.model || "",
+    year: vehicle.year || new Date().getFullYear(),
+    color: vehicle.color || "",
+    isActive: vehicle.active !== undefined ? vehicle.active : vehicle.isActive !== undefined ? vehicle.isActive : true,
+    createdAt: vehicle.created_at || vehicle.createdAt || new Date().toISOString(),
+    updatedAt: vehicle.updated_at || vehicle.updatedAt || new Date().toISOString(),
+  }));
 }

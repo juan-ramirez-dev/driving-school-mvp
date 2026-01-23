@@ -40,16 +40,10 @@ export async function getResources(
   type?: "classroom" | "vehicle"
 ): Promise<ApiResponse<Resource[]>> {
   const endpoint = type ? `/resources?type=${type}` : "/resources";
-  const response = await apiGet<ResourcesResponse>(endpoint);
+  const response = await apiGet<Resource[]>(endpoint);
   
-  if (response.success && response.data) {
-    return {
-      ...response,
-      data: response.data.data || [],
-    };
-  }
-  
-  return response as ApiResponse<Resource[]>;
+  // Data extraction is now handled automatically in apiRequest
+  return response;
 }
 
 /**

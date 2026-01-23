@@ -20,9 +20,29 @@ export async function getStudents(): Promise<ApiResponse<Student[]>> {
  * POST /students
  */
 export async function createStudent(
-  data: Omit<Student, "id" | "createdAt" | "updatedAt" | "isActive">
+  data: {
+    name: string;
+    last_name: string;
+    email: string;
+    phone: string;
+    document: string;
+    dateOfBirth: string;
+    address: string;
+  }
 ): Promise<ApiResponse<Student>> {
-  return isMockMode() ? mockApi.createStudent(data) : realApi.createStudent(data);
+  if (isMockMode()) {
+    // Transform backend format to mock format
+    const mockData: Omit<Student, "id" | "createdAt" | "updatedAt" | "isActive"> = {
+      name: `${data.name} ${data.last_name}`.trim(),
+      email: data.email,
+      phone: data.phone,
+      legalId: data.document,
+      dateOfBirth: data.dateOfBirth,
+      address: data.address,
+    };
+    return mockApi.createStudent(mockData);
+  }
+  return realApi.createStudent(data);
 }
 
 /**
@@ -30,11 +50,34 @@ export async function createStudent(
  */
 export async function updateStudent(
   id: string,
-  data: Partial<Omit<Student, "id" | "createdAt">>
+  data: Partial<{
+    name: string;
+    last_name: string;
+    email: string;
+    phone: string;
+    document: string;
+    dateOfBirth: string;
+    address: string;
+    isActive: boolean;
+  }>
 ): Promise<ApiResponse<Student>> {
-  return isMockMode()
-    ? mockApi.updateStudent(id, data)
-    : realApi.updateStudent(id, data);
+  if (isMockMode()) {
+    // Transform backend format to mock format
+    const mockData: Partial<Omit<Student, "id" | "createdAt">> = {};
+    if (data.name !== undefined || data.last_name !== undefined) {
+      const firstName = data.name || "";
+      const lastName = data.last_name || "";
+      mockData.name = `${firstName} ${lastName}`.trim();
+    }
+    if (data.email !== undefined) mockData.email = data.email;
+    if (data.phone !== undefined) mockData.phone = data.phone;
+    if (data.document !== undefined) mockData.legalId = data.document;
+    if (data.dateOfBirth !== undefined) mockData.dateOfBirth = data.dateOfBirth;
+    if (data.address !== undefined) mockData.address = data.address;
+    if (data.isActive !== undefined) mockData.isActive = data.isActive;
+    return mockApi.updateStudent(id, mockData);
+  }
+  return realApi.updateStudent(id, data);
 }
 
 /**

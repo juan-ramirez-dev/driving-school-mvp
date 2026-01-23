@@ -13,16 +13,37 @@ import { Teacher, TeacherAvailability } from "../../mocks/types";
  * GET /teachers
  */
 export async function getTeachers(): Promise<ApiResponse<Teacher[]>> {
-  return isMockMode() ? mockApi.getTeachers() : realApi.getTeachers();
+  if (isMockMode()) {
+    const mockResponse = await mockApi.getTeachers();
+    return mockResponse;
+  }
+  return realApi.getTeachers();
 }
 
 /**
  * POST /teachers
  */
 export async function createTeacher(
-  data: Omit<Teacher, "id" | "createdAt" | "updatedAt" | "isActive">
+  data: {
+    name: string;
+    last_name: string;
+    email: string;
+    phone: string;
+    document: string;
+    licenseNumber: string;
+  }
 ): Promise<ApiResponse<Teacher>> {
-  return isMockMode() ? mockApi.createTeacher(data) : realApi.createTeacher(data);
+  if (isMockMode()) {
+    // Transform backend format to mock format
+    const mockData: Omit<Teacher, "id" | "createdAt" | "updatedAt" | "isActive"> = {
+      name: `${data.name} ${data.last_name}`.trim(),
+      email: data.email,
+      phone: data.phone,
+      licenseNumber: data.licenseNumber,
+    };
+    return mockApi.createTeacher(mockData);
+  }
+  return realApi.createTeacher(data);
 }
 
 /**
@@ -30,11 +51,31 @@ export async function createTeacher(
  */
 export async function updateTeacher(
   id: string,
-  data: Partial<Omit<Teacher, "id" | "createdAt">>
+  data: Partial<{
+    name: string;
+    last_name: string;
+    email: string;
+    phone: string;
+    document: string;
+    licenseNumber: string;
+    isActive: boolean;
+  }>
 ): Promise<ApiResponse<Teacher>> {
-  return isMockMode()
-    ? mockApi.updateTeacher(id, data)
-    : realApi.updateTeacher(id, data);
+  if (isMockMode()) {
+    // Transform backend format to mock format
+    const mockData: Partial<Omit<Teacher, "id" | "createdAt">> = {};
+    if (data.name !== undefined || data.last_name !== undefined) {
+      const firstName = data.name || "";
+      const lastName = data.last_name || "";
+      mockData.name = `${firstName} ${lastName}`.trim();
+    }
+    if (data.email !== undefined) mockData.email = data.email;
+    if (data.phone !== undefined) mockData.phone = data.phone;
+    if (data.licenseNumber !== undefined) mockData.licenseNumber = data.licenseNumber;
+    if (data.isActive !== undefined) mockData.isActive = data.isActive;
+    return mockApi.updateTeacher(id, mockData);
+  }
+  return realApi.updateTeacher(id, data);
 }
 
 /**

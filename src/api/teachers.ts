@@ -10,6 +10,7 @@ import { Teacher, TeacherAvailability } from "../mocks/types";
 /**
  * GET /teachers
  * Returns a list of teachers
+ * Note: Data extraction from nested structure is handled automatically in apiRequest
  */
 export async function getTeachers(): Promise<ApiResponse<Teacher[]>> {
   return apiGet<Teacher[]>("/teachers");
@@ -18,9 +19,17 @@ export async function getTeachers(): Promise<ApiResponse<Teacher[]>> {
 /**
  * POST /teachers
  * Creates a new teacher
+ * Backend expects: name, last_name, email, phone, document, licenseNumber
  */
 export async function createTeacher(
-  data: Omit<Teacher, "id" | "createdAt" | "updatedAt" | "isActive">
+  data: {
+    name: string;
+    last_name: string;
+    email: string;
+    phone: string;
+    document: string;
+    licenseNumber: string;
+  }
 ): Promise<ApiResponse<Teacher>> {
   return apiPost<Teacher>("/teachers", data);
 }
@@ -28,10 +37,19 @@ export async function createTeacher(
 /**
  * PUT /teachers/:id
  * Updates an existing teacher
+ * Backend expects: name, last_name, email, phone, document, licenseNumber
  */
 export async function updateTeacher(
   id: string,
-  data: Partial<Omit<Teacher, "id" | "createdAt">>
+  data: Partial<{
+    name: string;
+    last_name: string;
+    email: string;
+    phone: string;
+    document: string;
+    licenseNumber: string;
+    isActive: boolean;
+  }>
 ): Promise<ApiResponse<Teacher>> {
   return apiPut<Teacher>(`/teachers/${id}`, data);
 }

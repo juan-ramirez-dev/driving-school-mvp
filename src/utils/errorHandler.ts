@@ -10,6 +10,7 @@ export interface ApiError {
   message: string;
   code?: number;
   details?: unknown;
+  errors?: Record<string, string[]>; // Laravel validation errors
 }
 
 export interface ApiSuccess<T> {
@@ -30,6 +31,36 @@ export enum HttpErrorCode {
 }
 
 /**
+ * Format Laravel validation errors into a user-friendly message
+ * @param errors - Laravel validation errors object
+ * @returns Formatted error message string
+ */
+export function formatValidationErrors(
+  errors: Record<string, string[]>
+): string {
+  const errorMessages: string[] = [];
+  
+  for (const [field, messages] of Object.entries(errors)) {
+    if (Array.isArray(messages) && messages.length > 0) {
+      // Format field name: "last_name" -> "Last Name"
+      const formattedField = field
+        .split("_")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ");
+      
+      // Add all error messages for this field
+      messages.forEach((msg) => {
+        errorMessages.push(`${formattedField}: ${msg}`);
+      });
+    }
+  }
+  
+  return errorMessages.length > 0 
+    ? errorMessages.join("\n") 
+    : "Validation error";
+}
+
+/**
  * Handles errors and returns a standardized error response
  * @param error - The error to handle
  * @param defaultMessage - Default error message if error is not a string or object with message
@@ -41,10 +72,11 @@ export function handleError(
   defaultMessage: string = "An unexpected error occurred while fetching mock data.",
   code?: HttpErrorCode
 ): ApiError {
-  console.error("Mock API Error:", error);
+  console.error("API Error:", error);
 
   let message = defaultMessage;
   let errorCode = code;
+  let validationErrors: Record<string, string[]> | undefined;
 
   if (typeof error === "string") {
     message = error;
@@ -52,10 +84,23 @@ export function handleError(
     message = error.message || defaultMessage;
   } else if (
     typeof error === "object" &&
-    error !== null &&
-    "message" in error
+    error !== null
   ) {
-    message = String(error.message);
+    // Handle Laravel validation error format
+    if ("errors" in error && typeof error.errors === "object" && error.errors !== null) {
+      validationErrors = error.errors as Record<string, string[]>;
+      
+      // Format validation errors into a user-friendly message
+      if ("message" in error && typeof error.message === "string") {
+        // Use the main message, but also format individual errors
+        const formattedErrors = formatValidationErrors(validationErrors);
+        message = formattedErrors || String(error.message);
+      } else {
+        message = formatValidationErrors(validationErrors);
+      }
+    } else if ("message" in error) {
+      message = String(error.message);
+    }
   }
 
   // Trigger notification
@@ -66,6 +111,7 @@ export function handleError(
     message,
     code: errorCode,
     details: error,
+    errors: validationErrors,
   };
 }
 

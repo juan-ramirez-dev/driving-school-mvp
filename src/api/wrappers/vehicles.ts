@@ -20,9 +20,27 @@ export async function getVehicles(): Promise<ApiResponse<Vehicle[]>> {
  * POST /vehicles
  */
 export async function createVehicle(
-  data: Omit<Vehicle, "id" | "createdAt" | "updatedAt" | "isActive">
+  data: {
+    name: string;
+    plate: string;
+    brand: string;
+    model: string;
+    year: number;
+    color: string;
+  }
 ): Promise<ApiResponse<Vehicle>> {
-  return isMockMode() ? mockApi.createVehicle(data) : realApi.createVehicle(data);
+  if (isMockMode()) {
+    // Transform backend format to mock format
+    const mockData: Omit<Vehicle, "id" | "createdAt" | "updatedAt" | "isActive"> = {
+      licensePlate: data.plate,
+      brand: data.brand,
+      model: data.model,
+      year: data.year,
+      color: data.color,
+    };
+    return mockApi.createVehicle(mockData);
+  }
+  return realApi.createVehicle(data);
 }
 
 /**
@@ -30,11 +48,28 @@ export async function createVehicle(
  */
 export async function updateVehicle(
   id: string,
-  data: Partial<Omit<Vehicle, "id" | "createdAt">>
+  data: Partial<{
+    name: string;
+    plate: string;
+    brand: string;
+    model: string;
+    year: number;
+    color: string;
+    isActive: boolean;
+  }>
 ): Promise<ApiResponse<Vehicle>> {
-  return isMockMode()
-    ? mockApi.updateVehicle(id, data)
-    : realApi.updateVehicle(id, data);
+  if (isMockMode()) {
+    // Transform backend format to mock format
+    const mockData: Partial<Omit<Vehicle, "id" | "createdAt">> = {};
+    if (data.plate !== undefined) mockData.licensePlate = data.plate;
+    if (data.brand !== undefined) mockData.brand = data.brand;
+    if (data.model !== undefined) mockData.model = data.model;
+    if (data.year !== undefined) mockData.year = data.year;
+    if (data.color !== undefined) mockData.color = data.color;
+    if (data.isActive !== undefined) mockData.isActive = data.isActive;
+    return mockApi.updateVehicle(id, mockData);
+  }
+  return realApi.updateVehicle(id, data);
 }
 
 /**

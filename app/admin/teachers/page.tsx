@@ -21,7 +21,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Edit, Trash2, X, Calendar } from "lucide-react";
+import { Plus, Edit, Trash2, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import {
   getTeachers,
@@ -55,12 +55,12 @@ export default function TeachersPage() {
   const [selectedTeacherForAvailability, setSelectedTeacherForAvailability] = useState<Teacher | null>(null);
   const [formData, setFormData] = useState({
     name: "",
+    last_name: "",
     email: "",
     phone: "",
+    document: "",
     licenseNumber: "",
-    specialization: [] as string[],
   });
-  const [newSpecialization, setNewSpecialization] = useState("");
   const [availabilityForm, setAvailabilityForm] = useState({
     date: "",
     startTime: "08:00",
@@ -98,21 +98,28 @@ export default function TeachersPage() {
   const handleOpenDialog = (teacher?: Teacher) => {
     if (teacher) {
       setEditingTeacher(teacher);
+      // Split name into name and last_name if it contains a space
+      const nameParts = teacher.name.split(" ");
+      const firstName = nameParts[0] || "";
+      const lastName = nameParts.slice(1).join(" ") || "";
+      
       setFormData({
-        name: teacher.name,
-        email: teacher.email,
-        phone: teacher.phone,
-        licenseNumber: teacher.licenseNumber,
-        specialization: teacher.specialization || [],
+        name: firstName,
+        last_name: lastName,
+        email: teacher?.email,
+        phone: teacher?.phone,
+        document: "", // Backend will provide document, but we may not have it in frontend type
+        licenseNumber: teacher?.licenseNumber,
       });
     } else {
       setEditingTeacher(null);
       setFormData({
         name: "",
+        last_name: "",
         email: "",
         phone: "",
+        document: "",
         licenseNumber: "",
-        specialization: [],
       });
     }
     setIsDialogOpen(true);
@@ -123,31 +130,11 @@ export default function TeachersPage() {
     setEditingTeacher(null);
     setFormData({
       name: "",
+      last_name: "",
       email: "",
       phone: "",
+      document: "",
       licenseNumber: "",
-      specialization: [],
-    });
-    setNewSpecialization("");
-  };
-
-  const handleAddSpecialization = () => {
-    if (
-      newSpecialization.trim() &&
-      !formData.specialization.includes(newSpecialization.trim())
-    ) {
-      setFormData({
-        ...formData,
-        specialization: [...formData.specialization, newSpecialization.trim()],
-      });
-      setNewSpecialization("");
-    }
-  };
-
-  const handleRemoveSpecialization = (index: number) => {
-    setFormData({
-      ...formData,
-      specialization: formData.specialization.filter((_, i) => i !== index),
     });
   };
 
@@ -155,7 +142,7 @@ export default function TeachersPage() {
     e.preventDefault();
     try {
       if (editingTeacher) {
-        const result = await updateTeacher(editingTeacher.id, formData);
+        const result = await updateTeacher(editingTeacher?.id, formData);
         if (result.success) {
           toast.success("Instructor actualizado exitosamente");
           loadData();
@@ -271,16 +258,29 @@ export default function TeachersPage() {
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Nombre</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  required
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Nombre</Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="last_name">Apellido</Label>
+                  <Input
+                    id="last_name"
+                    value={formData.last_name}
+                    onChange={(e) =>
+                      setFormData({ ...formData, last_name: e.target.value })
+                    }
+                    required
+                  />
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
@@ -306,6 +306,17 @@ export default function TeachersPage() {
                 />
               </div>
               <div className="space-y-2">
+                <Label htmlFor="document">Documento</Label>
+                <Input
+                  id="document"
+                  value={formData.document}
+                  onChange={(e) =>
+                    setFormData({ ...formData, document: e.target.value })
+                  }
+                  required
+                />
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="licenseNumber">Número de Licencia</Label>
                 <Input
                   id="licenseNumber"
@@ -315,42 +326,6 @@ export default function TeachersPage() {
                   }
                   required
                 />
-              </div>
-              <div className="space-y-2">
-                <Label>Especialización</Label>
-                <div className="flex gap-2">
-                  <Input
-                    value={newSpecialization}
-                    onChange={(e) => setNewSpecialization(e.target.value)}
-                    onKeyPress={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        handleAddSpecialization();
-                      }
-                    }}
-                    placeholder="Agregar especialización..."
-                  />
-                  <Button type="button" onClick={handleAddSpecialization}>
-                    Agregar
-                  </Button>
-                </div>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {formData.specialization.map((item, index) => (
-                    <span
-                      key={index}
-                      className="flex items-center gap-1 px-2 py-1 bg-secondary rounded text-sm"
-                    >
-                      {item}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveSpecialization(index)}
-                        className="hover:text-destructive"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </span>
-                  ))}
-                </div>
               </div>
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={handleCloseDialog}>
@@ -377,51 +352,33 @@ export default function TeachersPage() {
                 <TableHead>Email</TableHead>
                 <TableHead>Teléfono</TableHead>
                 <TableHead>Licencia</TableHead>
-                <TableHead>Especialización</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {teachers.length === 0 ? (
+              {teachers && teachers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center text-muted-foreground">
                     No hay instructores registrados
                   </TableCell>
                 </TableRow>
               ) : (
                 teachers.map((teacher) => (
-                  <TableRow key={teacher.id}>
-                    <TableCell className="font-medium">{teacher.name}</TableCell>
-                    <TableCell>{teacher.email}</TableCell>
-                    <TableCell>{teacher.phone}</TableCell>
-                    <TableCell>{teacher.licenseNumber}</TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {teacher.specialization.slice(0, 2).map((item, idx) => (
-                          <span
-                            key={idx}
-                            className="px-2 py-0.5 bg-secondary rounded text-xs"
-                          >
-                            {item}
-                          </span>
-                        ))}
-                        {teacher.specialization.length > 2 && (
-                          <span className="px-2 py-0.5 text-xs text-muted-foreground">
-                            +{teacher.specialization.length - 2}
-                          </span>
-                        )}
-                      </div>
-                    </TableCell>
+                  <TableRow key={teacher?.id}>
+                    <TableCell className="font-medium">{teacher?.name}</TableCell>
+                    <TableCell>{teacher?.email}</TableCell>
+                    <TableCell>{teacher?.phone}</TableCell>
+                    <TableCell>{teacher?.licenseNumber}</TableCell>
                     <TableCell>
                       <span
                         className={`px-2 py-1 rounded text-xs ${
-                          teacher.isActive
+                          teacher?.isActive
                             ? "bg-green-100 text-green-800"
                             : "bg-red-100 text-red-800"
                         }`}
                       >
-                        {teacher.isActive ? "Activo" : "Inactivo"}
+                        {teacher?.isActive ? "Activo" : "Inactivo"}
                       </span>
                     </TableCell>
                     <TableCell className="text-right">
@@ -445,7 +402,7 @@ export default function TeachersPage() {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleDeleteClick(teacher)}
-                          disabled={!teacher.isActive}
+                          disabled={!teacher?.isActive}
                         >
                           <Trash2 className="h-4 w-4 text-red-600" />
                         </Button>

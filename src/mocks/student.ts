@@ -90,7 +90,6 @@ const mockTeachers: Teacher[] = [
     email: "john.smith@drivingschool.com",
     phone: "+1-555-0101",
     licenseNumber: "TCH-001",
-    specialization: ["Practical", "Highway"],
     isActive: true,
     createdAt: "2025-01-05T08:00:00Z",
     updatedAt: "2025-01-05T08:00:00Z",
@@ -101,7 +100,6 @@ const mockTeachers: Teacher[] = [
     email: "maria.garcia@drivingschool.com",
     phone: "+1-555-0102",
     licenseNumber: "TCH-002",
-    specialization: ["Theoretical", "Practical"],
     isActive: true,
     createdAt: "2025-01-08T09:15:00Z",
     updatedAt: "2025-01-08T09:15:00Z",
@@ -112,7 +110,6 @@ const mockTeachers: Teacher[] = [
     email: "carlos.rodriguez@drivingschool.com",
     phone: "+1-555-0103",
     licenseNumber: "TCH-003",
-    specialization: ["Theoretical", "Practical"],
     isActive: true,
     createdAt: "2025-01-10T10:00:00Z",
     updatedAt: "2025-01-10T10:00:00Z",
@@ -123,7 +120,6 @@ const mockTeachers: Teacher[] = [
     email: "ana.martinez@drivingschool.com",
     phone: "+1-555-0104",
     licenseNumber: "TCH-004",
-    specialization: ["Practical", "City Driving"],
     isActive: true,
     createdAt: "2025-01-12T08:30:00Z",
     updatedAt: "2025-01-12T08:30:00Z",
@@ -134,7 +130,6 @@ const mockTeachers: Teacher[] = [
     email: "roberto.silva@drivingschool.com",
     phone: "+1-555-0105",
     licenseNumber: "TCH-005",
-    specialization: ["Theoretical"],
     isActive: true,
     createdAt: "2025-01-15T09:00:00Z",
     updatedAt: "2025-01-15T09:00:00Z",
@@ -229,14 +224,10 @@ function generateAvailableSlots(): AvailableSlot[] {
     { start: "17:00", end: "18:00" },
   ];
 
-  // Teachers that teach theoretical classes
-  const theoreticalTeachers = mockTeachers.filter(
-    (t) => t.specialization.includes("Theoretical")
-  );
-  // Teachers that teach practical classes
-  const practicalTeachers = mockTeachers.filter(
-    (t) => t.specialization.includes("Practical")
-  );
+  // All active teachers can teach both theoretical and practical classes
+  const activeTeachers = mockTeachers.filter((t) => t.isActive);
+  const theoreticalTeachers = activeTeachers;
+  const practicalTeachers = activeTeachers;
 
   for (let d = new Date(today); d <= twoWeeksLater; d.setDate(d.getDate() + 1)) {
     const dateStr = d.toISOString().split("T")[0];

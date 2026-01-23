@@ -31,7 +31,6 @@ export interface Teacher {
   email: string;
   phone: string;
   licenseNumber: string;
-  specialization: string[];
   isActive: boolean;
   createdAt: string;
   updatedAt: string;

@@ -110,15 +110,35 @@ async function apiRequest<T>(
     // Handle HTTP errors
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
+      
+      // Pass the entire error object to handleError so it can extract validation errors
       return handleError(
-        errorData.message || `HTTP ${response.status}: ${response.statusText}`,
-        "API request failed",
+        errorData, // Pass the full error object, not just the message
+        `HTTP ${response.status}: ${response.statusText}`,
         response.status as HttpErrorCode
       );
     }
 
     const data = await response.json();
-    return createSuccessResponse(data);
+    
+    // Backend returns nested structure: { status, message, data: [...], pagination: {...} }
+    // Extract the actual data from data.data if it exists and data is an object with status/message
+    // This handles Laravel ResponseHelper::paginated format
+    let extractedData = data;
+    
+    if (
+      data &&
+      typeof data === "object" &&
+      !Array.isArray(data) &&
+      "data" in data &&
+      data.data !== undefined &&
+      ("status" in data || "message" in data || "pagination" in data)
+    ) {
+      // This is a wrapped response with status/message/pagination, extract the inner data
+      extractedData = data.data;
+    }
+    
+    return createSuccessResponse(extractedData);
   } catch (error) {
     return handleError(error, "Failed to connect to API");
   }

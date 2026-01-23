@@ -18,9 +18,18 @@ export async function getStudents(): Promise<ApiResponse<Student[]>> {
 /**
  * POST /students
  * Creates a new student
+ * Backend expects: name, last_name, email, phone, document, dateOfBirth, address
  */
 export async function createStudent(
-  data: Omit<Student, "id" | "createdAt" | "updatedAt" | "isActive">
+  data: {
+    name: string;
+    last_name: string;
+    email: string;
+    phone: string;
+    document: string;
+    dateOfBirth: string;
+    address: string;
+  }
 ): Promise<ApiResponse<Student>> {
   return apiPost<Student>("/students", data);
 }
@@ -28,10 +37,20 @@ export async function createStudent(
 /**
  * PUT /students/:id
  * Updates an existing student
+ * Backend expects: name, last_name, email, phone, document, dateOfBirth, address
  */
 export async function updateStudent(
   id: string,
-  data: Partial<Omit<Student, "id" | "createdAt">>
+  data: Partial<{
+    name: string;
+    last_name: string;
+    email: string;
+    phone: string;
+    document: string;
+    dateOfBirth: string;
+    address: string;
+    isActive: boolean;
+  }>
 ): Promise<ApiResponse<Student>> {
   return apiPut<Student>(`/students/${id}`, data);
 }

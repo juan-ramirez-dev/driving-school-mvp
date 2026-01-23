@@ -49,9 +49,10 @@ export default function StudentsPage() {
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [formData, setFormData] = useState({
     name: "",
+    last_name: "",
     email: "",
     phone: "",
-    legalId: "",
+    document: "",
     dateOfBirth: "",
     address: "",
   });
@@ -84,11 +85,17 @@ export default function StudentsPage() {
   const handleOpenDialog = (student?: Student) => {
     if (student) {
       setEditingStudent(student);
+      // Split name into name and last_name if it contains a space
+      const nameParts = student.name.split(" ");
+      const firstName = nameParts[0] || "";
+      const lastName = nameParts.slice(1).join(" ") || "";
+      
       setFormData({
-        name: student.name,
+        name: firstName,
+        last_name: lastName,
         email: student.email,
         phone: student.phone,
-        legalId: student.legalId,
+        document: student.legalId, // Map legalId to document
         dateOfBirth: student.dateOfBirth,
         address: student.address,
       });
@@ -96,9 +103,10 @@ export default function StudentsPage() {
       setEditingStudent(null);
       setFormData({
         name: "",
+        last_name: "",
         email: "",
         phone: "",
-        legalId: "",
+        document: "",
         dateOfBirth: "",
         address: "",
       });
@@ -111,9 +119,10 @@ export default function StudentsPage() {
     setEditingStudent(null);
     setFormData({
       name: "",
+      last_name: "",
       email: "",
       phone: "",
-      legalId: "",
+      document: "",
       dateOfBirth: "",
       address: "",
     });
@@ -220,16 +229,29 @@ export default function StudentsPage() {
               </div>
             )}
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Nombre</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  required
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Nombre</Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="last_name">Apellido</Label>
+                  <Input
+                    id="last_name"
+                    value={formData.last_name}
+                    onChange={(e) =>
+                      setFormData({ ...formData, last_name: e.target.value })
+                    }
+                    required
+                  />
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
@@ -255,12 +277,12 @@ export default function StudentsPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="legalId">Identificación</Label>
+                <Label htmlFor="document">Documento</Label>
                 <Input
-                  id="legalId"
-                  value={formData.legalId}
+                  id="document"
+                  value={formData.document}
                   onChange={(e) =>
-                    setFormData({ ...formData, legalId: e.target.value })
+                    setFormData({ ...formData, document: e.target.value })
                   }
                   required
                 />
