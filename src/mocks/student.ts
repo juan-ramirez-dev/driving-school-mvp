@@ -444,21 +444,59 @@ export async function bookClass(
   try {
     await simulateDelay();
 
-    const { studentId, slotId } = payload;
+    const { teacher_id, class_type_id, date, start_time, end_time } = payload;
 
-    if (!studentId || !slotId) {
+    if (!teacher_id || !class_type_id || !date || !start_time || !end_time) {
       return handleError(
-        "studentId and slotId are required",
+        "teacher_id, class_type_id, date, start_time, and end_time are required",
         "Validation failed",
         HttpErrorCode.BAD_REQUEST
       );
     }
 
+    // Get current user's ID for mock mode
+    let studentId: string;
+    if (typeof window !== "undefined") {
+      const userStr = localStorage.getItem("driving-school-user");
+      if (userStr) {
+        try {
+          const user = JSON.parse(userStr);
+          studentId = user.id;
+        } catch {
+          return handleError(
+            "User not authenticated",
+            "Authentication failed",
+            HttpErrorCode.UNAUTHORIZED
+          );
+        }
+      } else {
+        return handleError(
+          "User not authenticated",
+          "Authentication failed",
+          HttpErrorCode.UNAUTHORIZED
+        );
+      }
+    } else {
+      return handleError(
+        "User not authenticated",
+        "Authentication failed",
+        HttpErrorCode.UNAUTHORIZED
+      );
+    }
+
     const slots = ensureSlotsGenerated();
-    const slot = slots.find((s) => s.id === slotId);
+    const classType: ClassType = class_type_id === 1 ? "theoretical" : "practical";
+    const slot = slots.find(
+      (s) =>
+        s.teacherId === String(teacher_id) &&
+        s.classType === classType &&
+        s.date === date &&
+        s.startTime === start_time &&
+        s.endTime === end_time
+    );
     if (!slot) {
       return handleError(
-        `Slot with id ${slotId} not found`,
+        `Slot not found for the specified criteria`,
         "Slot not found",
         HttpErrorCode.NOT_FOUND
       );
@@ -575,24 +613,22 @@ export async function cancelBooking(
   try {
     await simulateDelay();
 
-    const { studentId, bookingId } = payload;
+    const { appointment_id } = payload;
 
-    if (!studentId || !bookingId) {
+    if (!appointment_id) {
       return handleError(
-        "studentId and bookingId are required",
+        "appointment_id is required",
         "Validation failed",
         HttpErrorCode.BAD_REQUEST
       );
     }
 
     const bookings = getStoredBookings();
-    const booking = bookings.find(
-      (b) => b.id === bookingId && b.studentId === studentId
-    );
+    const booking = bookings.find((b) => b.id === String(appointment_id));
 
     if (!booking) {
       return handleError(
-        `Booking with id ${bookingId} not found`,
+        `Booking with appointment_id ${appointment_id} not found`,
         "Booking not found",
         HttpErrorCode.NOT_FOUND
       );

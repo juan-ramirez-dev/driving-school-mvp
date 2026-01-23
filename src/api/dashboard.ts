@@ -127,14 +127,12 @@ export async function exportRUNT(): Promise<ApiResponse<Blob>> {
     return {
       success: true,
       data: blob,
-      message: "Exportación RUNT descargada correctamente",
     };
   } catch (error) {
     return {
       success: false,
-      data: null as any,
       message: error instanceof Error ? error.message : "Error al exportar RUNT",
-      error: error instanceof Error ? error.message : "Unknown error",
+      code: 500,
     };
   }
 }

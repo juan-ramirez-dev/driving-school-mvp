@@ -88,7 +88,7 @@ export function TeacherClassesManager({ teacherId }: TeacherClassesManagerProps)
   const loadClasses = async () => {
     try {
       setIsLoading(true);
-      const result = await getTeacherClasses(selectedDate);
+      const result = await getTeacherClasses(selectedDate, teacherId);
       if (result.success) {
         setTheoreticalClasses(result.data.theoreticalClasses);
         setPracticalClasses(result.data.practicalClasses);

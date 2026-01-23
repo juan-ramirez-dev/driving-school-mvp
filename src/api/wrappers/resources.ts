@@ -17,7 +17,6 @@ async function getResourcesMock(
   return {
     success: true,
     data: [],
-    message: "Mock resources (empty - use real API)",
   };
 }
 

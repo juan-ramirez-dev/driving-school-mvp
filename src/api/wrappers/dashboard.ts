@@ -44,7 +44,8 @@ export async function getCompletedReservations(
 
 /**
  * GET /dashboard/export-runt
+ * Returns Blob for file download (real API) or RUNTExportData (mock API)
  */
-export async function exportRUNT(): Promise<ApiResponse<RUNTExportData>> {
+export async function exportRUNT(): Promise<ApiResponse<Blob | RUNTExportData>> {
   return isMockMode() ? mockApi.exportRUNT() : realApi.exportRUNT();
 }

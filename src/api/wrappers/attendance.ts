@@ -17,12 +17,19 @@ import type {
  * GET /teacher/classes
  */
 export async function getTeacherClasses(
-  teacherId: string,
-  date: string
+  date: string,
+  teacherId?: string
 ): Promise<ApiResponse<TeacherClassesResponse>> {
-  return isMockMode()
-    ? mockApi.getTeacherClasses(teacherId, date)
-    : realApi.getTeacherClasses(teacherId, date);
+  if (isMockMode()) {
+    // Mock API requires teacherId
+    if (!teacherId) {
+      throw new Error("teacherId is required in mock mode");
+    }
+    return mockApi.getTeacherClasses(teacherId, date);
+  } else {
+    // Real API only needs date (uses authenticated user)
+    return realApi.getTeacherClasses(date);
+  }
 }
 
 /**

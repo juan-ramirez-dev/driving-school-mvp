@@ -223,55 +223,37 @@ export async function updateAttendance(
   try {
     await simulateDelay();
 
-    const { classId, classType, studentId, status } = payload;
+    const { appointment_id, attended } = payload;
 
-    if (!classId || !classType || !studentId || !status) {
+    if (!appointment_id) {
       return handleError(
-        "classId, classType, studentId, and status are required",
+        "appointment_id is required",
         "Validation failed",
         HttpErrorCode.BAD_REQUEST
       );
     }
 
-    if (classType === "theoretical") {
-      const cls = theoreticalClasses.find((c) => c.id === classId);
-      if (!cls) {
-        return handleError(
-          `Theoretical class with id ${classId} not found`,
-          "Class not found",
-          HttpErrorCode.NOT_FOUND
-        );
-      }
+    const classId = String(appointment_id);
+    const status: AttendanceStatus = attended ? "attended" : "absent";
 
-      const student = cls.students.find((s) => s.studentId === studentId);
-      if (!student) {
-        return handleError(
-          `Student with id ${studentId} not found in class`,
-          "Student not found",
-          HttpErrorCode.NOT_FOUND
-        );
-      }
-
-      student.attendanceStatus = status;
+    // Try to find in theoretical classes first
+    const theoreticalClass = theoreticalClasses.find((c) => c.id === classId);
+    if (theoreticalClass) {
+      // For theoretical classes, update all students' attendance
+      theoreticalClass.students.forEach((student) => {
+        student.attendanceStatus = status;
+      });
     } else {
-      const cls = practicalClasses.find((c) => c.id === classId);
-      if (!cls) {
+      // Try practical classes
+      const practicalClass = practicalClasses.find((c) => c.id === classId);
+      if (!practicalClass) {
         return handleError(
-          `Practical class with id ${classId} not found`,
+          `Class with appointment_id ${appointment_id} not found`,
           "Class not found",
           HttpErrorCode.NOT_FOUND
         );
       }
-
-      if (cls.student.studentId !== studentId) {
-        return handleError(
-          `Student with id ${studentId} not found in practical class`,
-          "Student not found",
-          HttpErrorCode.NOT_FOUND
-        );
-      }
-
-      cls.attendanceStatus = status;
+      practicalClass.attendanceStatus = status;
     }
 
     return createSuccessResponse({
@@ -297,46 +279,49 @@ export async function cancelClass(
   try {
     await simulateDelay();
 
-    const { classId, classType, teacherHasPermission, reason } = payload;
+    const { appointment_id, reason } = payload;
 
-    if (!classId || !classType) {
+    if (!appointment_id) {
       return handleError(
-        "classId and classType are required",
+        "appointment_id is required",
         "Validation failed",
         HttpErrorCode.BAD_REQUEST
       );
     }
 
-    if (!teacherHasPermission && !reason) {
-      return handleError(
-        "Cancellation reason is required when teacher lacks permission",
-        "Validation failed",
-        HttpErrorCode.BAD_REQUEST
-      );
-    }
+    const classId = String(appointment_id);
 
-    if (classType === "theoretical") {
-      const cls = theoreticalClasses.find((c) => c.id === classId);
-      if (!cls) {
+    // Try to find in theoretical classes first
+    const theoreticalClass = theoreticalClasses.find((c) => c.id === classId);
+    if (theoreticalClass) {
+      // Check if reason is required (when teacher doesn't have permission to cancel without reason)
+      if (!theoreticalClass.canCancelWithoutReason && !reason) {
         return handleError(
-          `Theoretical class with id ${classId} not found`,
-          "Class not found",
-          HttpErrorCode.NOT_FOUND
+          "Cancellation reason is required when teacher lacks permission",
+          "Validation failed",
+          HttpErrorCode.BAD_REQUEST
         );
       }
-
-      cls.isCancelled = true;
+      theoreticalClass.isCancelled = true;
     } else {
-      const cls = practicalClasses.find((c) => c.id === classId);
-      if (!cls) {
+      // Try practical classes
+      const practicalClass = practicalClasses.find((c) => c.id === classId);
+      if (!practicalClass) {
         return handleError(
-          `Practical class with id ${classId} not found`,
+          `Class with appointment_id ${appointment_id} not found`,
           "Class not found",
           HttpErrorCode.NOT_FOUND
         );
       }
-
-      cls.isCancelled = true;
+      // Check if reason is required (when teacher doesn't have permission to cancel without reason)
+      if (!practicalClass.canCancelWithoutReason && !reason) {
+        return handleError(
+          "Cancellation reason is required when teacher lacks permission",
+          "Validation failed",
+          HttpErrorCode.BAD_REQUEST
+        );
+      }
+      practicalClass.isCancelled = true;
     }
 
     return createSuccessResponse({
