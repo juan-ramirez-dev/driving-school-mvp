@@ -64,12 +64,31 @@ export async function bookClass(
 }
 
 /**
- * GET /student/bookings
- * Returns all bookings for authenticated student
- * Note: studentId removed - backend uses authenticated user
+ * GET /student/bookings?student_id=:student_id
+ * Returns all bookings for a student
+ * Note: studentId is the logged-in user's ID
  */
-export async function getStudentBookings(): Promise<ApiResponse<StudentBooking[]>> {
-  const response = await apiGet<any[]>("/student/bookings");
+export async function getStudentBookings(
+  studentId?: string
+): Promise<ApiResponse<StudentBooking[]>> {
+  // Get current user ID if studentId not provided
+  let currentStudentId = studentId;
+  if (!currentStudentId && typeof window !== "undefined") {
+    const { getCurrentUser } = await import("../../lib/auth");
+    const user = getCurrentUser();
+    currentStudentId = user?.id;
+  }
+  
+  if (!currentStudentId) {
+    return {
+      success: false,
+      message: "Student ID is required",
+      code: 400,
+    };
+  }
+  
+  const params = new URLSearchParams({ student_id: currentStudentId });
+  const response = await apiGet<any[]>(`/student/bookings?${params.toString()}`);
   
   if (response.success && response.data) {
     const { transformStudentBookings } = await import("../utils/responseTransformers");
@@ -99,12 +118,31 @@ export async function cancelBooking(
 }
 
 /**
- * GET /student/fines
- * Returns all fines for authenticated student
- * Note: studentId removed - backend uses authenticated user
+ * GET /student/fines?student_id=:student_id
+ * Returns all fines for a student
+ * Note: studentId is the logged-in user's ID
  */
-export async function getStudentFines(): Promise<ApiResponse<Fine[]>> {
-  const response = await apiGet<any>("/student/fines");
+export async function getStudentFines(
+  studentId?: string
+): Promise<ApiResponse<Fine[]>> {
+  // Get current user ID if studentId not provided
+  let currentStudentId = studentId;
+  if (!currentStudentId && typeof window !== "undefined") {
+    const { getCurrentUser } = await import("../../lib/auth");
+    const user = getCurrentUser();
+    currentStudentId = user?.id;
+  }
+  
+  if (!currentStudentId) {
+    return {
+      success: false,
+      message: "Student ID is required",
+      code: 400,
+    };
+  }
+  
+  const params = new URLSearchParams({ student_id: currentStudentId });
+  const response = await apiGet<any>(`/student/fines?${params.toString()}`);
   
   if (response.success && response.data) {
     const { transformStudentFines } = await import("../utils/responseTransformers");
@@ -118,17 +156,36 @@ export async function getStudentFines(): Promise<ApiResponse<Fine[]>> {
 }
 
 /**
- * GET /student/debt
- * Returns total debt information for authenticated student
- * Note: studentId removed - backend uses authenticated user
+ * GET /student/debt?student_id=:student_id
+ * Returns total debt information for a student
+ * Note: studentId is the logged-in user's ID
  */
-export async function getStudentDebt(): Promise<ApiResponse<StudentDebt>> {
-  const response = await apiGet<any>("/student/debt");
+export async function getStudentDebt(
+  studentId?: string
+): Promise<ApiResponse<StudentDebt>> {
+  // Get current user ID if studentId not provided
+  let currentStudentId = studentId;
+  if (!currentStudentId && typeof window !== "undefined") {
+    const { getCurrentUser } = await import("../../lib/auth");
+    const user = getCurrentUser();
+    currentStudentId = user?.id;
+  }
+  
+  if (!currentStudentId) {
+    return {
+      success: false,
+      message: "Student ID is required",
+      code: 400,
+    };
+  }
+  
+  const params = new URLSearchParams({ student_id: currentStudentId });
+  const response = await apiGet<any>(`/student/debt?${params.toString()}`);
   
   if (response.success && response.data) {
     const { transformStudentDebt, transformStudentFines } = await import("../utils/responseTransformers");
     // Get fines separately to include in debt response
-    const finesResponse = await getStudentFines();
+    const finesResponse = await getStudentFines(currentStudentId);
     const fines = finesResponse.success ? finesResponse.data : [];
     
     return {
