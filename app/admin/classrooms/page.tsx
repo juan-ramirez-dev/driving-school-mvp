@@ -161,7 +161,7 @@ export default function ClassroomsPage() {
 
   const handleDeleteConfirm = async () => {
     if (!classroomToDelete) return;
-    
+
     try {
       const result = await deleteClassroom(classroomToDelete.id);
       if (result.success) {
@@ -321,29 +321,31 @@ export default function ClassroomsPage() {
                     <TableCell>{classroom.capacity}</TableCell>
                     <TableCell>{classroom.location}</TableCell>
                     <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {classroom.equipment.slice(0, 2).map((item, idx) => (
-                          <span
-                            key={idx}
-                            className="px-2 py-0.5 bg-secondary rounded text-xs"
-                          >
-                            {item}
-                          </span>
-                        ))}
-                        {classroom.equipment.length > 2 && (
-                          <span className="px-2 py-0.5 text-xs text-muted-foreground">
-                            +{classroom.equipment.length - 2}
-                          </span>
-                        )}
-                      </div>
+                      {classroom?.equipment && classroom?.equipment.length ?
+                        <div className="flex flex-wrap gap-1">
+                          {classroom?.equipment.slice(0, 2).map((item, idx) => (
+                            <span
+                              key={idx}
+                              className="px-2 py-0.5 bg-secondary rounded text-xs"
+                            >
+                              {item}
+                            </span>
+                          ))}
+                          {classroom.equipment.length > 2 && (
+                            <span className="px-2 py-0.5 text-xs text-muted-foreground">
+                              +{classroom.equipment.length - 2}
+                            </span>
+                          )}
+                        </div>
+                        : "-"}
+
                     </TableCell>
                     <TableCell>
                       <span
-                        className={`px-2 py-1 rounded text-xs ${
-                          classroom.isActive
+                        className={`px-2 py-1 rounded text-xs ${classroom.isActive
                             ? "bg-green-100 text-green-800"
                             : "bg-red-100 text-red-800"
-                        }`}
+                          }`}
                       >
                         {classroom.isActive ? "Activo" : "Inactivo"}
                       </span>

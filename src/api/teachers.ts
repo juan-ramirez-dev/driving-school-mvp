@@ -29,7 +29,7 @@ export async function getTeachers(): Promise<ApiResponse<Teacher[]>> {
 /**
  * POST /teachers
  * Creates a new teacher
- * Backend expects: name, last_name, email, phone, document, licenseNumber
+ * Backend expects: name, last_name, email, number_phone, document, licenseNumber
  */
 export async function createTeacher(
   data: {
@@ -41,7 +41,14 @@ export async function createTeacher(
     licenseNumber: string;
   }
 ): Promise<ApiResponse<Teacher>> {
-  const response = await apiPost<any>("/teachers", data);
+  // Transform phone to number_phone for backend
+  const backendData = {
+    ...data,
+    number_phone: data.phone,
+  };
+  delete (backendData as any).phone;
+  
+  const response = await apiPost<any>("/teachers", backendData);
   
   if (response.success && response.data) {
     const { transformTeachers } = await import("../utils/responseTransformers");
@@ -59,7 +66,7 @@ export async function createTeacher(
 /**
  * PUT /teachers/:id
  * Updates an existing teacher
- * Backend expects: name, last_name, email, phone, document, licenseNumber
+ * Backend expects: name, last_name, email, number_phone, document, licenseNumber
  */
 export async function updateTeacher(
   id: string,
@@ -73,7 +80,14 @@ export async function updateTeacher(
     isActive: boolean;
   }>
 ): Promise<ApiResponse<Teacher>> {
-  const response = await apiPut<any>(`/teachers/${id}`, data);
+  // Transform phone to number_phone for backend
+  const backendData: any = { ...data };
+  if (data.phone !== undefined) {
+    backendData.number_phone = data.phone;
+    delete backendData.phone;
+  }
+  
+  const response = await apiPut<any>(`/teachers/${id}`, backendData);
   
   if (response.success && response.data) {
     const { transformTeachers } = await import("../utils/responseTransformers");
