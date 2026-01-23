@@ -3,7 +3,7 @@
  * Handles requests to backend resources endpoints
  */
 
-import { apiGet } from "./client";
+import { apiGet, apiPost, apiPut, apiDelete } from "./client";
 import { ApiResponse } from "../utils/errorHandler";
 
 export interface Resource {
@@ -44,6 +44,78 @@ export async function getResources(
   
   // Data extraction is now handled automatically in apiRequest
   return response;
+}
+
+/**
+ * GET /resources/{id}
+ * Get resource by ID
+ */
+export async function getResourceById(
+  id: string | number
+): Promise<ApiResponse<Resource>> {
+  return apiGet<Resource>(`/resources/${id}`);
+}
+
+/**
+ * POST /resources
+ * Create a new resource
+ */
+export async function createResource(
+  data: {
+    name: string;
+    type: "classroom" | "vehicle";
+    plate?: string;
+    brand?: string;
+    model?: string;
+    year?: number;
+    color?: string;
+    active?: boolean;
+  }
+): Promise<ApiResponse<Resource>> {
+  return apiPost<Resource>("/resources", data);
+}
+
+/**
+ * PUT /resources/{id}
+ * Update a resource
+ */
+export async function updateResource(
+  id: string | number,
+  data: Partial<{
+    name: string;
+    type: "classroom" | "vehicle";
+    plate?: string;
+    brand?: string;
+    model?: string;
+    year?: number;
+    color?: string;
+    active?: boolean;
+  }>
+): Promise<ApiResponse<Resource>> {
+  return apiPut<Resource>(`/resources/${id}`, data);
+}
+
+/**
+ * DELETE /resources/{id}
+ * Deactivate a resource (sets active = false)
+ */
+export async function deleteResource(
+  id: string | number
+): Promise<ApiResponse<{ message: string }>> {
+  return apiDelete<{ message: string }>(`/resources/${id}`);
+}
+
+/**
+ * POST /resources/{id}/teachers
+ * Assign teachers to a resource
+ */
+export async function assignTeachersToResource(
+  id: string | number,
+  teacherIds: number[]
+): Promise<ApiResponse<{ message: string }>> {
+  return apiPost<{ message: string }>(`/resources/${id}/teachers`, {
+    teacher_ids: teacherIds,
+  });
 }
 
 /**

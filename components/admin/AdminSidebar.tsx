@@ -9,7 +9,12 @@ import {
   GraduationCap, 
   UserCog,
   BarChart3,
-  LayoutDashboard
+  LayoutDashboard,
+  CalendarCheck,
+  BookOpen,
+  Settings,
+  AlertCircle,
+  Link as LinkIcon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -25,12 +30,17 @@ export function AdminSidebar({ onLogout }: AdminSidebarProps) {
 
   const navItems = [
     { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/admin/appointments", label: "Citas", icon: CalendarCheck },
+    { href: "/admin/bookings", label: "Reservas", icon: Users },
+    { href: "/admin/class-types", label: "Tipos de Clase", icon: BookOpen },
     { href: "/admin/vehicles", label: "Vehículos", icon: Car },
     { href: "/admin/classrooms", label: "Aulas", icon: School },
     { href: "/admin/teachers", label: "Instructores", icon: UserCog },
     { href: "/admin/students", label: "Estudiantes", icon: GraduationCap },
-    { href: "/admin/bookings", label: "Reservas", icon: Users },
     { href: "/admin/schedules", label: "Horarios", icon: Calendar },
+    { href: "/admin/teacher-resources", label: "Recursos-Profesores", icon: LinkIcon },
+    { href: "/admin/penalties", label: "Penalizaciones", icon: AlertCircle },
+    { href: "/admin/system-settings", label: "Configuración", icon: Settings },
   ];
 
   return (

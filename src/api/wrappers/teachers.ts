@@ -21,6 +21,33 @@ export async function getTeachers(): Promise<ApiResponse<Teacher[]>> {
 }
 
 /**
+ * GET /teachers/{id}
+ */
+export async function getTeacherById(
+  id: string | number
+): Promise<ApiResponse<Teacher>> {
+  if (isMockMode()) {
+    // Try to find teacher in mock data
+    const mockResponse = await mockApi.getTeachers();
+    if (mockResponse.success && mockResponse.data) {
+      const teacher = mockResponse.data.find((t) => t.id === String(id));
+      if (teacher) {
+        return {
+          success: true,
+          data: teacher,
+        };
+      }
+    }
+    return {
+      success: false,
+      message: "Teacher not found",
+      code: 404,
+    };
+  }
+  return realApi.getTeacherById(id);
+}
+
+/**
  * POST /teachers
  */
 export async function createTeacher(

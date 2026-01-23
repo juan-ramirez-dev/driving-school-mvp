@@ -13,14 +13,42 @@
  */
 
 // Export all wrapper functions
+export * from "./wrappers/auth";
+export * from "./wrappers/classtype";
+export * from "./wrappers/teacher-resources";
+export * from "./wrappers/teacher-schedules";
+export * from "./wrappers/system-settings";
+export * from "./wrappers/penalties";
+export * from "./wrappers/users";
 export * from "./wrappers/vehicles";
 export * from "./wrappers/classrooms";
 export * from "./wrappers/teachers";
 export * from "./wrappers/students";
 export * from "./wrappers/dashboard";
 export * from "./wrappers/attendance";
-export * from "./wrappers/student";
 export * from "./wrappers/resources";
+
+// Export appointments with explicit naming to avoid conflict with student.getAvailableSlots
+export {
+  getAppointments,
+  getAppointmentById,
+  createAppointment,
+  updateAppointment,
+  deleteAppointment,
+  getAllAppointments,
+  updateAppointmentStatus,
+  getAvailableSlots as getAppointmentAvailableSlots,
+} from "./wrappers/appointments";
+
+// Export student functions with explicit naming
+export {
+  getAvailableSlots as getStudentAvailableSlots,
+  bookClass,
+  getStudentBookings,
+  cancelBooking,
+  getStudentFines,
+  getStudentDebt,
+} from "./wrappers/student";
 
 // Export configuration utilities
 export {

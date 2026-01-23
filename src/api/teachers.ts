@@ -27,6 +27,27 @@ export async function getTeachers(): Promise<ApiResponse<Teacher[]>> {
 }
 
 /**
+ * GET /teachers/{id}
+ * Get teacher by ID
+ */
+export async function getTeacherById(
+  id: string | number
+): Promise<ApiResponse<Teacher>> {
+  const response = await apiGet<any>(`/teachers/${id}`);
+  
+  if (response.success && response.data) {
+    const { transformTeachers } = await import("../utils/responseTransformers");
+    const transformed = transformTeachers([response.data]);
+    return {
+      ...response,
+      data: transformed[0],
+    };
+  }
+  
+  return response as ApiResponse<Teacher>;
+}
+
+/**
  * POST /teachers
  * Creates a new teacher
  * Backend expects: name, last_name, email, number_phone, document, licenseNumber

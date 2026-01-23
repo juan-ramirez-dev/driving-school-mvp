@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import {
-  getAvailableSlots,
+  getStudentAvailableSlots,
   getStudentBookings,
   bookClass,
   cancelBooking,
@@ -91,7 +91,7 @@ export default function StudentDashboardPage() {
       // Load all data in parallel
       // Note: studentId removed - backend uses authenticated user
       const [slotsRes, bookingsRes, finesRes, debtRes] = await Promise.all([
-        getAvailableSlots(),
+        getStudentAvailableSlots(),
         getStudentBookings(user.id),
         getStudentFines(user.id),
         getStudentDebt(user.id),

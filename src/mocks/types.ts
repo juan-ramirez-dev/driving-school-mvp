@@ -103,3 +103,104 @@ export interface RUNTExportData {
     model: string;
   }>;
 }
+
+// Appointment types
+export interface Appointment {
+  id: string;
+  teacher_id: string;
+  student_id: string;
+  class_type_id: string;
+  resource_id?: string;
+  date: string;
+  start_time: string;
+  end_time: string;
+  status: "scheduled" | "confirmed" | "cancelled" | "completed";
+  teacher?: Teacher;
+  student?: Student;
+  classType?: ClassType;
+  resource?: Resource;
+}
+
+// Class Type
+export interface ClassType {
+  id: string;
+  name: string;
+  requires_resource: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// Resource (extend existing)
+export interface Resource {
+  id: string;
+  name: string;
+  type: "classroom" | "vehicle";
+  plate?: string | null;
+  brand?: string | null;
+  model?: string | null;
+  year?: number | null;
+  color?: string | null;
+  active: boolean;
+  teachers?: Teacher[];
+  created_at?: string;
+  updated_at?: string;
+}
+
+// Teacher Resource Assignment
+export interface TeacherResource {
+  id: string;
+  user_id: string;
+  resource_id: string;
+  user?: Teacher;
+  resource?: Resource;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// Teacher Schedule
+export interface TeacherSchedule {
+  id: string;
+  user_id: string;
+  day_of_week: number; // 0-6 (Sunday-Saturday)
+  start_time: string;
+  end_time: string;
+  slot_minutes: number;
+  active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// System Setting
+export interface SystemSetting {
+  id: string;
+  setting_key: string;
+  type: "string" | "int" | "bool" | "json";
+  value: string | number | boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// Penalty
+export interface Penalty {
+  id: string;
+  user_id: string;
+  appointment_id?: string;
+  amount: number;
+  reason: string;
+  paid: boolean;
+  paid_at?: string | null;
+  user?: {
+    id: string;
+    name: string;
+    document: string;
+  };
+  appointment?: Appointment;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// Available Slot
+export interface AvailableSlot {
+  start: string;
+  end: string;
+}

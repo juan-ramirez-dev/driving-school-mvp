@@ -214,6 +214,9 @@ export async function logout(): Promise<void> {
   }
 }
 
+/**
+ * Get current user from localStorage (synchronous)
+ */
 export function getCurrentUser(): User | null {
   if (typeof window === "undefined") return null;
 
@@ -223,6 +226,45 @@ export function getCurrentUser(): User | null {
   try {
     return JSON.parse(stored);
   } catch {
+    return null;
+  }
+}
+
+/**
+ * Fetch current user from API and update localStorage
+ * This calls GET /api/me to get the latest user data
+ */
+export async function fetchCurrentUserFromAPI(): Promise<User | null> {
+  try {
+    const { getCurrentUser: getCurrentUserAPI } = await import("@/src/api");
+    const response = await getCurrentUserAPI();
+    
+    if (response.success && response.data) {
+      const backendUser = response.data;
+      
+      // Map backend user to frontend User format
+      const frontendUser: User = {
+        id: String(backendUser.id),
+        username: backendUser.document || backendUser.email || "",
+        email: backendUser.email || "",
+        name: backendUser.last_name 
+          ? `${backendUser.name} ${backendUser.last_name}`.trim() 
+          : backendUser.name,
+        legalId: backendUser.document,
+        role: mapBackendRoleToFrontend(backendUser.role),
+      };
+      
+      // Update localStorage
+      if (typeof window !== "undefined") {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(frontendUser));
+      }
+      
+      return frontendUser;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error("Error fetching current user from API:", error);
     return null;
   }
 }

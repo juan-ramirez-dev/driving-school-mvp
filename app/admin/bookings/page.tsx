@@ -1,20 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { getAllBookingsWithDetails } from "@/lib/mockData";
-import { MOCK_INSTRUCTORS } from "@/lib/mockData";
+import { getAllAppointments, getTeachers } from "@/src/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BookingsTable } from "@/components/admin/BookingsTable";
 import { BookingFilters } from "@/components/admin/BookingFilters";
 import { toast } from "sonner";
 import type { BookingWithDetails } from "@/lib/mockData";
+import type { Appointment } from "@/src/api/appointments";
+import type { Teacher } from "@/src/mocks/types";
 import { Download } from "lucide-react";
 
 export default function BookingsPage() {
   const [bookings, setBookings] = useState<BookingWithDetails[]>([]);
   const [filteredBookings, setFilteredBookings] = useState<BookingWithDetails[]>([]);
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [filters, setFilters] = useState({
     studentName: "",
     studentLegalId: "",
@@ -24,23 +25,58 @@ export default function BookingsPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    loadBookings();
+    loadData();
   }, []);
 
   useEffect(() => {
     applyFilters();
   }, [filters, bookings]);
 
-  const loadBookings = () => {
-    const allBookings = getAllBookingsWithDetails();
-    const sortedBookings = allBookings.sort((a, b) => {
-      const dateA = new Date(`${a.date}T${a.startTime}`);
-      const dateB = new Date(`${b.date}T${b.startTime}`);
-      return dateB.getTime() - dateA.getTime();
-    });
-    setBookings(sortedBookings);
-    setFilteredBookings(sortedBookings);
-    setIsLoading(false);
+  const loadData = async () => {
+    try {
+      setIsLoading(true);
+      const [appointmentsRes, teachersRes] = await Promise.all([
+        getAllAppointments(),
+        getTeachers(),
+      ]);
+
+      if (teachersRes.success) {
+        setTeachers(teachersRes.data);
+      }
+
+      if (appointmentsRes.success) {
+        // Transform appointments to BookingWithDetails format
+        const transformedBookings: BookingWithDetails[] = appointmentsRes.data.map((apt: Appointment) => ({
+          id: String(apt.id),
+          studentId: String(apt.student_id),
+          studentName: apt.student?.name || `Estudiante ${apt.student_id}`,
+          studentLegalId: apt.student?.document || "",
+          instructorId: String(apt.teacher_id),
+          instructorName: apt.teacher?.name || `Profesor ${apt.teacher_id}`,
+          classType: apt.classType?.name?.toLowerCase().includes("teórica") || apt.classType?.name?.toLowerCase().includes("theoretical") ? "theoretical" : "practical",
+          date: apt.date,
+          startTime: apt.start_time.substring(0, 5),
+          endTime: apt.end_time.substring(0, 5),
+          status: apt.status === "confirmed" ? "confirmed" : apt.status === "cancelled" ? "cancelled" : "pending",
+          createdAt: new Date().toISOString(), // Backend doesn't always provide this
+        }));
+
+        const sortedBookings = transformedBookings.sort((a, b) => {
+          const dateA = new Date(`${a.date}T${a.startTime}`);
+          const dateB = new Date(`${b.date}T${b.startTime}`);
+          return dateB.getTime() - dateA.getTime();
+        });
+        setBookings(sortedBookings);
+        setFilteredBookings(sortedBookings);
+      } else {
+        toast.error(appointmentsRes.message || "Error al cargar reservas");
+      }
+    } catch (error) {
+      toast.error("Error al cargar reservas");
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const applyFilters = () => {
@@ -154,7 +190,10 @@ export default function BookingsPage() {
           <BookingFilters
             filters={filters}
             onFiltersChange={setFilters}
-            instructors={MOCK_INSTRUCTORS}
+            instructors={teachers.map((t) => ({
+              id: t.id,
+              name: `${t.name} ${t.last_name || ""}`.trim(),
+            }))}
           />
         </CardContent>
       </Card>
