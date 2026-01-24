@@ -182,7 +182,7 @@ export function transformAvailableSlots(backendResponse: any[]): AvailableSlot[]
     const teacherId = String(slot.teacher?.id || "");
     const teacherName = slot.teacher?.name || "Instructor";
     const classTypeId = slot.classType?.id;
-    const classType = classTypeId === 2 ? "theoretical" : "practical";
+    const classType = classTypeId === 1 ? "theoretical" : "practical";
     
     return {
       id: slot.id || `${teacherId}-${slot.date}-${slot.startTime}`,
@@ -226,8 +226,8 @@ export function transformStudentBookings(
         classType = "practical";
       }
     } else if (appointment.class_type_id) {
-      // Fallback to ID-based mapping (respecting user's change: ID 2 = theoretical)
-      classType = appointment.class_type_id === 2 ? "theoretical" : "practical";
+      // Fallback to ID-based mapping: ID 1 = theoretical, ID 2 = practical
+      classType = appointment.class_type_id === 1 ? "theoretical" : "practical";
     }
     
     // Build teacher name
