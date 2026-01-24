@@ -30,7 +30,7 @@ export async function getAvailableSlots(
   }
   
   const response = await apiGet<any[]>(endpoint);
-  
+
   if (response.success && response.data) {
     const { transformAvailableSlots } = await import("../utils/responseTransformers");
     return {
@@ -92,8 +92,27 @@ export async function bookClass(
     }
   }
   
+  // Get current user ID (student_id) - backend requires it
+  let currentStudentId: number | undefined;
+  if (typeof window !== "undefined") {
+    const { getCurrentUser } = await import("../../lib/auth");
+    const user = getCurrentUser();
+    currentStudentId = user ? parseInt(user.id) : undefined;
+  }
+  
+  if (!currentStudentId) {
+    return {
+      success: false,
+      message: "Student ID is required",
+      code: 400,
+    };
+  }
+  
   // If payload doesn't have resource_id, fetch it
-  let finalPayload = { ...payload };
+  let finalPayload: any = { ...payload };
+  
+  // Add student_id to payload (required by backend)
+  finalPayload.student_id = currentStudentId;
   
   if (!finalPayload.resource_id) {
     const { selectResourceForClassType } = await import("./resources");

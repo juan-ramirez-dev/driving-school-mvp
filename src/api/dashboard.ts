@@ -19,16 +19,14 @@ import {
 export async function getActiveStudentsCount(): Promise<
   ApiResponse<{ count: number }>
 > {
-  const response = await apiGet<{
-    total?: number;
-    active?: number;
-    inactive?: number;
-  }>("/dashboard/active-students");
-  
+  const response = await apiGet<{ count: number }>("/dashboard/active-students");
+
   if (response.success && response.data) {
     return {
       ...response,
-      data: transformDashboardActiveStudents(response.data),
+      data: {
+        count: response.data.count,
+      }
     };
   }
   
@@ -45,12 +43,8 @@ export async function getLastMonthReservations(): Promise<
   const response = await apiGet<any>("/dashboard/last-month-reservations");
   
   if (response.success && response.data) {
-    // Backend returns counts, but we need to fetch actual reservations
-    // For now, transform the response structure
-    const transformed = transformDashboardReservations(
-      response.data,
-      response.data.reservations || []
-    );
+    // Pass the full response data - transformer will extract reservations array
+    const transformed = transformDashboardReservations(response.data);
     return {
       ...response,
       data: transformed,
@@ -74,10 +68,8 @@ export async function getCompletedReservations(
   const response = await apiGet<any>(endpoint);
   
   if (response.success && response.data) {
-    const transformed = transformDashboardReservations(
-      response.data,
-      response.data.reservations || []
-    );
+    // Pass the full response data - transformer will extract reservations array
+    const transformed = transformDashboardReservations(response.data);
     return {
       ...response,
       data: transformed,

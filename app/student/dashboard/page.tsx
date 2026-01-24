@@ -98,8 +98,11 @@ export default function StudentDashboardPage() {
         getStudentDebt(user.id),
       ]);
 
+      console.log('slotsRes', slotsRes);
+
       if (slotsRes.success) {
         setAvailableSlots(slotsRes.data);
+        console.log('availableSlots', slotsRes.data);
       } else {
         toast.error("Error al cargar horarios disponibles");
       }
@@ -208,6 +211,9 @@ export default function StudentDashboardPage() {
     toast.info("Sesión cerrada exitosamente");
   };
 
+
+  console.log('availableSlots', availableSlots);
+
   // Filter available slots
   const filteredSlots = availableSlots.filter((slot) => {
     if (classTypeFilter !== "all" && slot.classType !== classTypeFilter) {
@@ -218,6 +224,8 @@ export default function StudentDashboardPage() {
     }
     return true;
   });
+
+  console.log('filteredSlots', filteredSlots);
 
   // Get unique dates for filter
   const uniqueDates = Array.from(new Set(availableSlots.map((s) => s.date))).sort();
@@ -291,7 +299,7 @@ export default function StudentDashboardPage() {
         </div>
 
         {/* Debt Summary Card */}
-        {debt && (
+        {debt?.totalDebt && debt?.totalDebt > 0 ? (
           <Card className="border-red-200 bg-red-50 dark:bg-red-950/20">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -322,7 +330,7 @@ export default function StudentDashboardPage() {
               </div>
             </CardContent>
           </Card>
-        )}
+        ) : null}
 
         {/* Tabs */}
         <div className="flex gap-2 border-b">

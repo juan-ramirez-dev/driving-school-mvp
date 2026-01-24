@@ -27,16 +27,83 @@ export function transformDashboardActiveStudents(
 
 /**
  * Transform dashboard reservations response
- * Backend: { total, confirmed, scheduled, cancelled } or similar
+ * Backend: { total, attended, not_attended, completion_rate, reservations: [...] }
  * Frontend: { count: number, reservations: Reservation[] }
  */
 export function transformDashboardReservations(
   backendResponse: any,
   reservations?: Reservation[]
 ): { count: number; reservations: Reservation[] } {
+  // If reservations are already provided (from parameter), use them
+  // Otherwise, transform from backendResponse.reservations
+  let transformedReservations: Reservation[] = [];
+  
+  if (reservations && reservations.length > 0) {
+    // Already transformed, use as is
+    transformedReservations = reservations;
+  } else if (backendResponse.reservations && Array.isArray(backendResponse.reservations)) {
+    // Transform backend reservations to frontend format
+    transformedReservations = backendResponse.reservations.map((reservation: any) => {
+      // Extract date part (remove time if present)
+      const dateStr = reservation.date || "";
+      const date = dateStr.includes("T") ? dateStr.split("T")[0] : dateStr;
+      
+      // Format time strings (remove seconds if present)
+      const startTime = reservation.start_time?.substring(0, 5) || reservation.start_time || "";
+      const endTime = reservation.end_time?.substring(0, 5) || reservation.end_time || "";
+      
+      // Map resource to vehicleId or classroomId based on type
+      let vehicleId: string | undefined;
+      let classroomId: string | undefined;
+      if (reservation.resource) {
+        const resourceId = String(reservation.resource.id);
+        if (reservation.resource.type === "vehicle") {
+          vehicleId = resourceId;
+        } else if (reservation.resource.type === "classroom") {
+          classroomId = resourceId;
+        }
+      } else if (reservation.resource_id) {
+        // Fallback: if we have resource_id but no resource object, use it as vehicleId
+        vehicleId = String(reservation.resource_id);
+      }
+      
+      // Map status (backend: "completed", "cancelled", "scheduled", "confirmed")
+      // Frontend: "pending" | "confirmed" | "completed" | "cancelled"
+      let status: "pending" | "confirmed" | "completed" | "cancelled" = "pending";
+      if (reservation.status === "completed") {
+        status = "completed";
+      } else if (reservation.status === "cancelled") {
+        status = "cancelled";
+      } else if (reservation.status === "confirmed") {
+        status = "confirmed";
+      } else if (reservation.status === "scheduled") {
+        status = "pending";
+      }
+      
+      // Extract completedAt from updated_at when status is completed
+      const completedAt = status === "completed" && reservation.updated_at
+        ? reservation.updated_at
+        : undefined;
+      
+      return {
+        id: String(reservation.id),
+        studentId: String(reservation.student_id || reservation.student?.id || ""),
+        teacherId: String(reservation.teacher_id || reservation.teacher?.id || ""),
+        vehicleId,
+        classroomId,
+        date,
+        startTime,
+        endTime,
+        status,
+        createdAt: reservation.created_at || new Date().toISOString(),
+        completedAt,
+      };
+    });
+  }
+  
   return {
-    count: backendResponse.total || backendResponse.count || 0,
-    reservations: reservations || [],
+    count: backendResponse.total || backendResponse.count || transformedReservations.length,
+    reservations: transformedReservations,
   };
 }
 
@@ -109,32 +176,26 @@ function transformAppointmentToClass(appointment: any): any {
  * Frontend: Flat array of AvailableSlot
  */
 export function transformAvailableSlots(backendResponse: any[]): AvailableSlot[] {
-  const slots: AvailableSlot[] = [];
-
-  console.log(backendResponse);
-  backendResponse.forEach((teacherSlot) => {
-    const teacherId = String(teacherSlot.teacher_id);
-    const teacherName = teacherSlot.teacher_name || "Instructor";
-    const date = teacherSlot.date;
-
-    if (teacherSlot.slots && Array.isArray(teacherSlot.slots)) {
-      teacherSlot.slots.forEach((slot: any, index: number) => {
-        slots.push({
-          id: `${teacherId}-${date}-${index}`,
-          date: date,
-          startTime: slot.start?.substring(0, 5) || slot.start,
-          endTime: slot.end?.substring(0, 5) || slot.end,
-          classType: teacherSlot.class_type_id === 1 ? "theoretical" : "practical",
-          teacherId: teacherId,
-          teacherName: teacherName,
-          availableSpots: slot.available_spots || 1,
-          totalSpots: slot.total_spots || 1,
-        });
-      });
-    }
+  // Backend returns flat array of slots with teacher, resource, and classType objects
+  // Structure: [{ id, date, startTime, endTime, teacher: {id, name, document}, resource: null, classType: {id, name, requires_resource} }]
+  return backendResponse.map((slot: any) => {
+    const teacherId = String(slot.teacher?.id || "");
+    const teacherName = slot.teacher?.name || "Instructor";
+    const classTypeId = slot.classType?.id;
+    const classType = classTypeId === 1 ? "theoretical" : "practical";
+    
+    return {
+      id: slot.id || `${teacherId}-${slot.date}-${slot.startTime}`,
+      date: slot.date,
+      startTime: slot.startTime?.substring(0, 5) || slot.startTime,
+      endTime: slot.endTime?.substring(0, 5) || slot.endTime,
+      classType: classType,
+      teacherId: teacherId,
+      teacherName: teacherName,
+      availableSpots: slot.availableSpots || slot.available_spots || 1,
+      totalSpots: slot.totalSpots || slot.total_spots || 1,
+    };
   });
-
-  return slots;
 }
 
 /**
@@ -275,7 +336,6 @@ export function transformTeachers(backendResponse: any[]): Teacher[] {
 export function transformTeacherAvailability(backendResponse: any[]): TeacherAvailability[] {
   const availability: TeacherAvailability[] = [];
   
-  console.log(backendResponse);
   backendResponse.forEach((teacherData: any) => {
     const teacherId = String(teacherData.teacher_id);
     const schedules = teacherData.schedules || [];
