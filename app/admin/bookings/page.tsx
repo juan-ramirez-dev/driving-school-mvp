@@ -19,7 +19,7 @@ export default function BookingsPage() {
   const [filters, setFilters] = useState({
     studentName: "",
     studentLegalId: "",
-    instructorId: "",
+    instructorId: "all",
     date: "",
   });
   const [isLoading, setIsLoading] = useState(true);
@@ -48,6 +48,7 @@ export default function BookingsPage() {
         // Transform appointments to BookingWithDetails format
         const transformedBookings: BookingWithDetails[] = appointmentsRes.data.map((apt: Appointment) => ({
           id: String(apt.id),
+          userId: String(apt.student_id), // Required by Booking interface
           studentId: String(apt.student_id),
           studentName: apt.student?.name || `Estudiante ${apt.student_id}`,
           studentLegalId: apt.student?.document || "",
@@ -57,7 +58,7 @@ export default function BookingsPage() {
           date: apt.date,
           startTime: apt.start_time.substring(0, 5),
           endTime: apt.end_time.substring(0, 5),
-          status: apt.status === "confirmed" ? "confirmed" : apt.status === "cancelled" ? "cancelled" : "pending",
+          status: apt.status === "confirmed" ? "confirmed" : apt.status === "cancelled" ? "cancelled" : "confirmed", // Booking interface only allows "confirmed" | "cancelled"
           createdAt: new Date().toISOString(), // Backend doesn't always provide this
         }));
 
@@ -98,7 +99,7 @@ export default function BookingsPage() {
       );
     }
 
-    if (filters.instructorId) {
+    if (filters.instructorId && filters.instructorId !== "all") {
       filtered = filtered.filter(
         (booking) => booking.instructorId === filters.instructorId
       );
@@ -117,7 +118,7 @@ export default function BookingsPage() {
     setFilters({
       studentName: "",
       studentLegalId: "",
-      instructorId: "",
+      instructorId: "all",
       date: "",
     });
   };
@@ -193,6 +194,7 @@ export default function BookingsPage() {
             instructors={teachers.map((t) => ({
               id: t.id,
               name: `${t.name} ${t.last_name || ""}`.trim(),
+              email: t.email || `${t.id}@example.com`, // Required by Instructor interface
             }))}
           />
         </CardContent>
