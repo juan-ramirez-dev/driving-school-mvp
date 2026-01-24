@@ -25,9 +25,11 @@ import {
   updateTeacherSchedule,
   deleteTeacherSchedule,
   toggleTeacherSchedule,
+  getClassTypes,
 } from "@/src/api";
 import type { Teacher } from "@/src/mocks/types";
 import type { TeacherSchedule } from "@/src/api/teacher-schedules";
+import type { ClassType } from "@/src/api/classtype";
 import { toast } from "sonner";
 import { Clock, Calendar, Plus, Edit, Trash2, Power } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -46,6 +48,7 @@ const DAY_NAMES = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Vierne
 
 export default function SchedulesPage() {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [classTypes, setClassTypes] = useState<ClassType[]>([]);
   const [selectedTeacher, setSelectedTeacher] = useState<string>("");
   const [schedules, setSchedules] = useState<TeacherSchedule[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -59,10 +62,12 @@ export default function SchedulesPage() {
     start_time: "",
     end_time: "",
     slot_minutes: "30",
+    class_type_id: "",
   });
 
   useEffect(() => {
     loadTeachers();
+    loadClassTypes();
   }, []);
 
   useEffect(() => {
@@ -84,6 +89,18 @@ export default function SchedulesPage() {
       }
     } catch (error) {
       toast.error("Error al cargar profesores");
+      console.error(error);
+    }
+  };
+
+  const loadClassTypes = async () => {
+    try {
+      const classTypesRes = await getClassTypes();
+      if (classTypesRes.success) {
+        setClassTypes(classTypesRes.data);
+      }
+    } catch (error) {
+      toast.error("Error al cargar tipos de clase");
       console.error(error);
     }
   };
@@ -116,6 +133,7 @@ export default function SchedulesPage() {
         start_time: schedule.start_time.substring(0, 5),
         end_time: schedule.end_time.substring(0, 5),
         slot_minutes: String(schedule.slot_minutes),
+        class_type_id: schedule.class_type_id ? String(schedule.class_type_id) : "",
       });
     } else {
       setEditingSchedule(null);
@@ -125,6 +143,7 @@ export default function SchedulesPage() {
         start_time: "",
         end_time: "",
         slot_minutes: "30",
+        class_type_id: "",
       });
     }
     setIsDialogOpen(true);
@@ -139,6 +158,7 @@ export default function SchedulesPage() {
       start_time: "",
       end_time: "",
       slot_minutes: "30",
+      class_type_id: "",
     });
   };
 
@@ -151,6 +171,7 @@ export default function SchedulesPage() {
         start_time: formData.start_time,
         end_time: formData.end_time,
         slot_minutes: Number(formData.slot_minutes),
+        class_type_id: Number(formData.class_type_id),
       };
 
       if (editingSchedule) {
@@ -341,6 +362,11 @@ export default function SchedulesPage() {
                     <div className="text-muted-foreground">
                       Duración: {getSlotLabel(schedule.slot_minutes)}
                     </div>
+                    {schedule.class_type_id && (
+                      <div className="text-muted-foreground">
+                        Tipo: {classTypes.find(ct => ct.id === schedule.class_type_id)?.name || `ID: ${schedule.class_type_id}`}
+                      </div>
+                    )}
                   </div>
                   <div className="flex gap-2 mt-3">
                     <Button
@@ -469,6 +495,27 @@ export default function SchedulesPage() {
                   <SelectItem value="30">30 minutos</SelectItem>
                   <SelectItem value="60">1 hora</SelectItem>
                   <SelectItem value="120">2 horas</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="class_type_id">Tipo de Clase *</Label>
+              <Select
+                value={formData.class_type_id}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, class_type_id: value })
+                }
+                required
+              >
+                <SelectTrigger id="class_type_id">
+                  <SelectValue placeholder="Seleccionar tipo de clase" />
+                </SelectTrigger>
+                <SelectContent>
+                  {classTypes.map((classType) => (
+                    <SelectItem key={classType.id} value={String(classType.id)}>
+                      {classType.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

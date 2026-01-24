@@ -182,7 +182,7 @@ export function transformAvailableSlots(backendResponse: any[]): AvailableSlot[]
     const teacherId = String(slot.teacher?.id || "");
     const teacherName = slot.teacher?.name || "Instructor";
     const classTypeId = slot.classType?.id;
-    const classType = classTypeId === 1 ? "theoretical" : "practical";
+    const classType = classTypeId === 2 ? "theoretical" : "practical";
     
     return {
       id: slot.id || `${teacherId}-${slot.date}-${slot.startTime}`,

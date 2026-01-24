@@ -13,6 +13,7 @@ export interface TeacherSchedule {
   start_time: string;
   end_time: string;
   slot_minutes: number;
+  class_type_id?: number;
   active: boolean;
   created_at?: string;
   updated_at?: string;
@@ -24,6 +25,7 @@ export interface CreateTeacherScheduleData {
   start_time: string;
   end_time: string;
   slot_minutes: number;
+  class_type_id: number;
 }
 
 /**
