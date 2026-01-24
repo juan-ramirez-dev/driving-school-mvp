@@ -141,6 +141,7 @@ export function TeacherClassesManager({ teacherId }: TeacherClassesManagerProps)
       // Transform to backend format: classId -> appointment_id, status -> attended boolean
       const payload: UpdateAttendancePayload = {
         appointment_id: parseInt(attendanceData.classId),
+        student_id: parseInt(attendanceData.studentId),
         attended: status === "attended",
       };
 

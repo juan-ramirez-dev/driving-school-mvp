@@ -60,12 +60,12 @@ export async function getTeacherClasses(
 /**
  * POST /teacher/classes/attendance
  * Updates attendance status for a student in a class
- * Payload transformed: { classId, classType, studentId, status } -> { appointment_id, attended: boolean }
+ * Backend expects: { appointment_id, student_id, attended: boolean, notes?: string }
  */
 export async function updateAttendance(
   payload: UpdateAttendancePayload
 ): Promise<ApiResponse<{ message: string }>> {
-  // Payload is already in backend format: { appointment_id, attended: boolean }
+  // Backend format: { appointment_id, student_id, attended: boolean, notes?: string }
   return apiPost<{ message: string }>("/teacher/classes/attendance", payload);
 }
 

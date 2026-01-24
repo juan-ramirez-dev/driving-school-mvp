@@ -210,7 +210,9 @@ export async function getTeacherClasses(
 
 export interface UpdateAttendancePayload {
   appointment_id: number;
+  student_id: number;
   attended: boolean;
+  notes?: string;
 }
 
 /**
@@ -223,11 +225,19 @@ export async function updateAttendance(
   try {
     await simulateDelay();
 
-    const { appointment_id, attended } = payload;
+    const { appointment_id, student_id, attended } = payload;
 
     if (!appointment_id) {
       return handleError(
         "appointment_id is required",
+        "Validation failed",
+        HttpErrorCode.BAD_REQUEST
+      );
+    }
+
+    if (!student_id) {
+      return handleError(
+        "student_id is required",
         "Validation failed",
         HttpErrorCode.BAD_REQUEST
       );
