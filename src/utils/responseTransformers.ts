@@ -193,7 +193,7 @@ export function transformAvailableSlots(backendResponse: any[]): AvailableSlot[]
       teacherId: teacherId,
       teacherName: teacherName,
       availableSpots: slot.availableSpots || slot.available_spots || 1,
-      totalSpots: slot.totalSpots || slot.total_spots || 1,
+      totalSpots: slot.totalCapacity || slot.totalCapacity || 1,
     };
   });
 }
