@@ -206,28 +206,92 @@ export function transformAvailableSlots(backendResponse: any[]): AvailableSlot[]
 export function transformStudentBookings(
   backendResponse: any[]
 ): StudentBooking[] {
-  return backendResponse.map((appointment) => ({
-    id: String(appointment.id), 
-    studentId: String(appointment.student_id),
-    classType:
-      appointment.class_type_id === 1 ? "theoretical" : "practical",
-    date: appointment.date,
-    startTime: appointment.start_time?.substring(0, 5) || appointment.start_time,
-    endTime: appointment.end_time?.substring(0, 5) || appointment.end_time,
-    teacherId: String(appointment.teacher_id),
-    teacherName:
-      appointment.teacher?.name ||
-      `${appointment.teacher?.name || ""} ${appointment.teacher?.last_name || ""}`.trim() ||
-      "Instructor",
-    status:
-      appointment.status === "completed"
-        ? "completed"
-        : appointment.status === "cancelled"
-        ? "cancelled"
-        : "scheduled",
-    createdAt: appointment.created_at || new Date().toISOString(),
-    cancelledAt: appointment.status === "cancelled" ? appointment.updated_at : undefined,
-  }));
+  return backendResponse.map((appointment) => {
+    // Extract date part (remove time if present)
+    const dateStr = appointment.date || "";
+    const date = dateStr.includes("T") ? dateStr.split("T")[0] : dateStr;
+    
+    // Format time strings (remove seconds if present)
+    const startTime = appointment.start_time?.substring(0, 5) || appointment.start_time || "";
+    const endTime = appointment.end_time?.substring(0, 5) || appointment.end_time || "";
+    
+    // Determine class type from class_type object or class_type_id
+    let classType: "theoretical" | "practical" = "practical";
+    if (appointment.class_type) {
+      // Use class_type name if available
+      const className = appointment.class_type.name?.toLowerCase() || "";
+      if (className.includes("teórica") || className.includes("teorica") || className.includes("theoretical")) {
+        classType = "theoretical";
+      } else {
+        classType = "practical";
+      }
+    } else if (appointment.class_type_id) {
+      // Fallback to ID-based mapping (respecting user's change: ID 2 = theoretical)
+      classType = appointment.class_type_id === 2 ? "theoretical" : "practical";
+    }
+    
+    // Build teacher name
+    const teacherName = appointment.teacher
+      ? `${appointment.teacher.name || ""} ${appointment.teacher.last_name || ""}`.trim() || "Instructor"
+      : "Instructor";
+    
+    return {
+      id: String(appointment.id), 
+      studentId: String(appointment.student_id),
+      classType,
+      date,
+      startTime,
+      endTime,
+      teacherId: String(appointment.teacher_id),
+      teacherName,
+      status:
+        appointment.status === "completed"
+          ? "completed"
+          : appointment.status === "cancelled"
+          ? "cancelled"
+          : "scheduled",
+      createdAt: appointment.created_at || new Date().toISOString(),
+      cancelledAt: appointment.status === "cancelled" ? appointment.updated_at : undefined,
+      // Teacher details
+      teacher: appointment.teacher
+        ? {
+            id: String(appointment.teacher.id),
+            name: appointment.teacher.name || "",
+            last_name: appointment.teacher.last_name,
+            email: appointment.teacher.email,
+            phone: appointment.teacher.number_phone || appointment.teacher.phone,
+          }
+        : undefined,
+      // Class type details
+      classTypeDetails: appointment.class_type
+        ? {
+            id: appointment.class_type.id,
+            name: appointment.class_type.name || "",
+            requires_resource: appointment.class_type.requires_resource || false,
+          }
+        : undefined,
+      // Resource details
+      resource: appointment.resource
+        ? {
+            id: String(appointment.resource.id),
+            name: appointment.resource.name || "",
+            type: appointment.resource.type === "vehicle" ? "vehicle" : "classroom",
+            plate: appointment.resource.plate,
+            brand: appointment.resource.brand,
+            model: appointment.resource.model,
+            year: appointment.resource.year,
+            color: appointment.resource.color,
+            capacity: appointment.resource.capacity,
+          }
+        : undefined,
+      // Attendance information
+      attendanceStatus: appointment.attendance_status || "pending",
+      checkedInAt: appointment.checked_in_at || undefined,
+      attendanceNotes: appointment.attendance_notes || undefined,
+      // Cancellation information
+      cancellationReason: appointment.cancellation_reason || undefined,
+    };
+  });
 }
 
 /**

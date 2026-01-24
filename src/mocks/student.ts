@@ -42,6 +42,39 @@ export interface StudentBooking {
   status: BookingStatus;
   createdAt: string;
   cancelledAt?: string;
+  // Teacher details for contact
+  teacher?: {
+    id: string;
+    name: string;
+    last_name?: string;
+    email?: string;
+    phone?: string;
+  };
+  // Class type details
+  classTypeDetails?: {
+    id: number;
+    name: string;
+    requires_resource: boolean;
+  };
+  // Resource details (vehicle or classroom)
+  resource?: {
+    id: string;
+    name: string;
+    type: "vehicle" | "classroom";
+    // Vehicle-specific fields
+    plate?: string;
+    brand?: string;
+    model?: string;
+    year?: number;
+    color?: string;
+    capacity?: number;
+  };
+  // Attendance information
+  attendanceStatus?: "pending" | "attended" | "not_attended";
+  checkedInAt?: string;
+  attendanceNotes?: string;
+  // Cancellation information
+  cancellationReason?: string;
 }
 
 export interface Fine {

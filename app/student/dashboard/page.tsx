@@ -16,6 +16,12 @@ import {
   BookOpen,
   XCircle,
   CheckCircle2,
+  Phone,
+  Mail,
+  Car,
+  Building,
+  CheckCircle,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -515,8 +521,78 @@ export default function StudentDashboardPage() {
                             </div>
                             <div className="flex items-center gap-2">
                               <User className="h-4 w-4 text-muted-foreground" />
-                              <span>Instructor: {booking.teacherName}</span>
+                              <span>
+                                Instructor: {booking.teacherName}
+                                {booking.teacher?.last_name && ` ${booking.teacher.last_name}`}
+                              </span>
                             </div>
+                            {booking.teacher?.phone && (
+                              <div className="flex items-center gap-2 text-muted-foreground">
+                                <Phone className="h-4 w-4" />
+                                <span>{booking.teacher.phone}</span>
+                              </div>
+                            )}
+                            {booking.teacher?.email && (
+                              <div className="flex items-center gap-2 text-muted-foreground">
+                                <Mail className="h-4 w-4" />
+                                <span>{booking.teacher.email}</span>
+                              </div>
+                            )}
+                            {booking.classTypeDetails && (
+                              <div className="flex items-center gap-2 text-muted-foreground">
+                                <BookOpen className="h-4 w-4" />
+                                <span>{booking.classTypeDetails.name}</span>
+                              </div>
+                            )}
+                            {booking.resource && (
+                              <div className="flex items-center gap-2 text-muted-foreground">
+                                {booking.resource.type === "vehicle" ? (
+                                  <Car className="h-4 w-4" />
+                                ) : (
+                                  <Building className="h-4 w-4" />
+                                )}
+                                <span>
+                                  {booking.resource.name}
+                                  {booking.resource.type === "vehicle" && booking.resource.plate && (
+                                    <> - Placa: {booking.resource.plate}</>
+                                  )}
+                                  {booking.resource.type === "vehicle" && booking.resource.brand && booking.resource.model && (
+                                    <> ({booking.resource.brand} {booking.resource.model})</>
+                                  )}
+                                  {booking.resource.type === "vehicle" && booking.resource.color && (
+                                    <> - {booking.resource.color}</>
+                                  )}
+                                </span>
+                              </div>
+                            )}
+                            {booking.attendanceStatus && booking.status === "scheduled" && (
+                              <div className="flex items-center gap-2">
+                                {booking.attendanceStatus === "attended" ? (
+                                  <>
+                                    <CheckCircle className="h-4 w-4 text-green-600" />
+                                    <span className="text-green-600">Asistencia confirmada</span>
+                                  </>
+                                ) : booking.attendanceStatus === "not_attended" ? (
+                                  <>
+                                    <X className="h-4 w-4 text-red-600" />
+                                    <span className="text-red-600">No asistió</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Clock className="h-4 w-4 text-muted-foreground" />
+                                    <span className="text-muted-foreground">Pendiente de asistencia</span>
+                                  </>
+                                )}
+                              </div>
+                            )}
+                            {booking.checkedInAt && (
+                              <div className="flex items-center gap-2 text-muted-foreground text-xs">
+                                <CheckCircle2 className="h-3 w-3" />
+                                <span>
+                                  Registrado: {new Date(booking.checkedInAt).toLocaleString("es-ES")}
+                                </span>
+                              </div>
+                            )}
                             {booking.cancelledAt && (
                               <div className="flex items-center gap-2 text-muted-foreground">
                                 <XCircle className="h-4 w-4" />
@@ -524,6 +600,12 @@ export default function StudentDashboardPage() {
                                   Cancelada el{" "}
                                   {new Date(booking.cancelledAt).toLocaleDateString("es-ES")}
                                 </span>
+                              </div>
+                            )}
+                            {booking.cancellationReason && (
+                              <div className="flex items-start gap-2 text-muted-foreground text-xs mt-1">
+                                <AlertCircle className="h-3 w-3 mt-0.5" />
+                                <span>Razón: {booking.cancellationReason}</span>
                               </div>
                             )}
                           </div>
