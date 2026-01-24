@@ -14,6 +14,7 @@ import type {
   StudentDebt,
   BookClassPayload,
   CancelBookingPayload,
+  CancelBookingResponse,
 } from "../../mocks/student";
 
 /**
@@ -53,7 +54,7 @@ export async function getStudentBookings(
  */
 export async function cancelBooking(
   payload: CancelBookingPayload
-): Promise<ApiResponse<{ message: string }>> {
+): Promise<ApiResponse<CancelBookingResponse>> {
   return isMockMode()
     ? mockApi.cancelBooking(payload)
     : realApi.cancelBooking(payload);

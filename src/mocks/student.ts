@@ -72,7 +72,19 @@ export interface BookClassPayload {
 
 export interface CancelBookingPayload {
   appointment_id: number;
+  student_id?: number; // Optional, backend may use authenticated user
   reason?: string;
+}
+
+export interface CancelBookingResponse {
+  id: number;
+  status: "cancelled";
+  penalty_applied: boolean;
+  penalty?: {
+    id: number;
+    amount: number;
+    reason: string;
+  };
 }
 
 // Storage keys
@@ -600,7 +612,7 @@ export async function getStudentBookings(
  */
 export async function cancelBooking(
   payload: CancelBookingPayload
-): Promise<ApiResponse<{ message: string }>> {
+): Promise<ApiResponse<CancelBookingResponse>> {
   try {
     await simulateDelay();
 
@@ -672,8 +684,10 @@ export async function cancelBooking(
     }
 
     return createSuccessResponse({
-      message: "Booking cancelled successfully",
-    });
+      id: parseInt(booking.id),
+      status: "cancelled" as const,
+      penalty_applied: false, // Mock doesn't apply penalties, backend will
+    } as CancelBookingResponse);
   } catch (error) {
     return handleError(error, "Failed to cancel booking");
   }

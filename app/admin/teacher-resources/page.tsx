@@ -119,7 +119,17 @@ export default function TeacherResourcesPage() {
         loadData();
         handleCloseDialog();
       } else {
-        toast.error(result.message || "Error al asignar recurso");
+        // Handle specific error for duplicate assignments
+        if (
+          result.message?.includes("ya está asignado") ||
+          result.message?.includes("duplicate") ||
+          result.message?.includes("ya asignado") ||
+          result.code === 422
+        ) {
+          toast.error("El recurso ya está asignado a este profesor");
+        } else {
+          toast.error(result.message || "Error al asignar recurso");
+        }
       }
     } catch (error) {
       toast.error("Error al asignar recurso");

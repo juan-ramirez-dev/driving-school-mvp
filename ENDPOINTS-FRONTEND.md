@@ -331,11 +331,15 @@ Solo retorna `status` `scheduled` o `confirmed`.
 
 **Validaciones:** `status` requerido, uno de: `scheduled`, `confirmed`, `cancelled`, `completed`.
 
-**Validaciones de negocio:** No se puede modificar una cita con `status` `completed`.
+**Validaciones de negocio:**
+- No se puede modificar una cita con `status` `completed`.
+- Si `status` = `cancelled` y la cita tiene `student_id`: se aplican reglas de cancelación. Si `cancellation_allow_after_limit` = false y la cancelación es tardía → **422**. Si se permite, puede aplicarse multa por cancelación tardía.
 
 **Response 200:** `{ "status": "success", "message": "Estado de la cita actualizado", "data": { "id": 1, "status": "confirmed", ... } }`
 
-**Response 422:** `{ "status": "error", "message": "No se puede modificar una clase finalizada", "errors": [] }`
+**Response 422:**
+- `{ "status": "error", "message": "No se puede modificar una clase finalizada", "errors": [] }`
+- `{ "status": "error", "message": "No puede cancelar; ha superado el tiempo límite.", "errors": [] }`
 
 ---
 
@@ -850,6 +854,16 @@ Solo retorna `status` `scheduled` o `confirmed`.
 
 ---
 
+### 7.6 Reglas de cancelación y asistencia (parametrizables)
+
+Claves en `system_settings` que parametrizan reglas de negocio. Valores por defecto en `SchoolSettingsSeeder`. Se gestionan con los endpoints de System Settings.
+
+**Cancelación:** `cancellation_hours_limit` (int, 4), `cancellation_allow_after_limit` (bool, true), `cancellation_late_penalty_enabled` (bool, true), `cancellation_late_penalty_amount` (int, 50000).
+
+**Asistencia:** `attendance_tolerance_minutes` (int, 10), `attendance_count_absent_as_no_show` (bool, true), `attendance_no_show_penalty_enabled` (bool, true), `attendance_no_show_penalty_amount` (int, 50000), `attendance_no_show_limit` (int, 3). Al superar el límite de inasistencias, el estudiante no puede reservar nuevas clases.
+
+---
+
 ## 8. Penalties (Penalizaciones)
 
 ### 8.1 Listar Penalizaciones
@@ -1319,6 +1333,8 @@ Solo recursos `type = 'classroom'`.
 
 **Validaciones de negocio:** El estudiante debe ser el de la cita.
 
+**Reglas de negocio (parametrizables):** Si `attended` = false se marca `attendance_status` = `absent`. Si `attendance_count_absent_as_no_show` y `attendance_no_show_penalty_enabled` = true, se aplica multa por inasistencia. La respuesta incluye `penalty_applied` (bool) cuando `attended` = false.
+
 **Response 200:**
 ```json
 {
@@ -1328,7 +1344,8 @@ Solo recursos `type = 'classroom'`.
     "appointment_id": 1,
     "student_id": 1,
     "attended": true,
-    "notes": "Llegó a tiempo"
+    "notes": "Llegó a tiempo",
+    "penalty_applied": false
   }
 }
 ```
@@ -1433,6 +1450,7 @@ Para práctica, `resource` será un vehículo cuando `requires_resource` es `tru
 **Validaciones de negocio:**
 - El recurso no debe estar ocupado en ese horario si se envía `resource_id`.
 - Tipo Práctica → siempre enviar `resource_id` (vehículo).
+- El estudiante no debe superar el límite de inasistencias (`attendance_no_show_limit`). Si lo supera → **422**.
 
 **Response 201:**
 ```json
@@ -1460,6 +1478,7 @@ Para práctica, `resource` será un vehículo cuando `requires_resource` es `tru
 **Response 422:**
 - `{ "status": "error", "message": "Este tipo de clase requiere un recurso", "errors": [] }`
 - `{ "status": "error", "message": "El recurso ya está ocupado en ese horario", "errors": [] }`
+- `{ "status": "error", "message": "Ha superado el límite de inasistencias. No puede reservar nuevas clases.", "errors": [] }`
 
 ---
 
@@ -1513,7 +1532,7 @@ Si no se envía, el backend puede usar el usuario autenticado según implementac
 
 **Validaciones:** `appointment_id` y `student_id` requeridos; `reason` opcional.
 
-**Validaciones de negocio:** La cita debe pertenecer al estudiante; no se puede cancelar una clase completada. Puede aplicarse penalización por cancelación tardía.
+**Validaciones de negocio:** La cita debe pertenecer al estudiante; no se puede cancelar una clase completada. Si `cancellation_allow_after_limit` = false y la cancelación es tardía → **422**. Si se permite y es tardía, puede aplicarse penalización según `cancellation_late_penalty_enabled`.
 
 **Response 200:**
 ```json
@@ -1527,7 +1546,9 @@ Si no se envía, el backend puede usar el usuario autenticado según implementac
   }
 }
 ```
-Si hay penalización: `penalty_applied: true` y `penalty: { "id": 1, "amount": 50000, "reason": "..." }`.
+Si hay multa: `penalty_applied` = true y `penalty`: `{ "id": 1, "amount": 50000, "reason": "Cancelación tardía - Menos de 4 horas antes de la clase" }`. Mensaje alternativo: "Reservación cancelada. Se aplicó una penalización por cancelación tardía."
+
+**Response 422:** `{ "status": "error", "message": "No puede cancelar; ha superado el tiempo límite.", "errors": [] }`
 
 ---
 

@@ -5,9 +5,11 @@
 
 import { apiGet, apiPost } from "./client";
 import { ApiResponse } from "../utils/errorHandler";
+import { getAppointmentById } from "./appointments";
 import type {
   TeacherClassesResponse,
   UpdateAttendancePayload,
+  UpdateAttendanceResponse,
   CancelClassPayload,
 } from "../mocks/attendance";
 
@@ -61,12 +63,53 @@ export async function getTeacherClasses(
  * POST /teacher/classes/attendance
  * Updates attendance status for a student in a class
  * Backend expects: { appointment_id, student_id, attended: boolean, notes?: string }
+ * Backend returns: { appointment_id, student_id, attended, notes?, penalty_applied }
+ * 
+ * Validates that student belongs to the appointment (backend also validates)
  */
 export async function updateAttendance(
   payload: UpdateAttendancePayload
-): Promise<ApiResponse<{ message: string }>> {
+): Promise<ApiResponse<UpdateAttendanceResponse>> {
+  // Validate that student belongs to appointment (client-side check for better UX)
+  try {
+    const appointmentResponse = await getAppointmentById(payload.appointment_id);
+    if (appointmentResponse.success && appointmentResponse.data) {
+      const appointment = appointmentResponse.data;
+      if (appointment.student_id !== payload.student_id) {
+        return {
+          success: false,
+          message: "El estudiante no pertenece a esta clase",
+          code: 422,
+        };
+      }
+    }
+  } catch (error) {
+    // If we can't validate, continue (backend will validate)
+    console.warn("Could not validate student belongs to appointment:", error);
+  }
+  
   // Backend format: { appointment_id, student_id, attended: boolean, notes?: string }
-  return apiPost<{ message: string }>("/teacher/classes/attendance", payload);
+  const response = await apiPost<any>("/teacher/classes/attendance", payload);
+  
+  if (response.success && response.data) {
+    // Backend returns data with penalty_applied field
+    return {
+      ...response,
+      data: response.data as UpdateAttendanceResponse,
+    };
+  }
+  
+  // Handle specific error messages
+  if (!response.success) {
+    if (response.message?.includes("no pertenece") || response.message?.includes("estudiante")) {
+      return {
+        ...response,
+        message: "El estudiante no pertenece a esta clase",
+      };
+    }
+  }
+  
+  return response as ApiResponse<UpdateAttendanceResponse>;
 }
 
 /**

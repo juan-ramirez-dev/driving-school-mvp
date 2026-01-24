@@ -160,7 +160,17 @@ export default function SchedulesPage() {
           loadSchedules();
           handleCloseDialog();
         } else {
-          toast.error(result.message || "Error al actualizar horario");
+          // Handle specific error for overlapping schedules
+          if (
+            result.message?.includes("cruza") ||
+            result.message?.includes("overlap") ||
+            result.message?.includes("se cruza") ||
+            result.code === 422
+          ) {
+            toast.error("El horario se cruza con otro existente");
+          } else {
+            toast.error(result.message || "Error al actualizar horario");
+          }
         }
       } else {
         const result = await createTeacherSchedule(payload);
@@ -169,7 +179,17 @@ export default function SchedulesPage() {
           loadSchedules();
           handleCloseDialog();
         } else {
-          toast.error(result.message || "Error al crear horario");
+          // Handle specific error for overlapping schedules
+          if (
+            result.message?.includes("cruza") ||
+            result.message?.includes("overlap") ||
+            result.message?.includes("se cruza") ||
+            result.code === 422
+          ) {
+            toast.error("El horario se cruza con otro existente");
+          } else {
+            toast.error(result.message || "Error al crear horario");
+          }
         }
       }
     } catch (error) {

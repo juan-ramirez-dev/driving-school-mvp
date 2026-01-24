@@ -12,6 +12,7 @@ import type {
   StudentDebt,
   BookClassPayload,
   CancelBookingPayload,
+  CancelBookingResponse,
 } from "../mocks/student";
 
 /**
@@ -45,10 +46,52 @@ export async function getAvailableSlots(
  * POST /student/book-class
  * Books a class for a student
  * Payload transformed from { studentId, slotId } to full structure
+ * Includes client-side validation for debt and no-show limit (UX improvement)
  */
 export async function bookClass(
   payload: BookClassPayload
 ): Promise<ApiResponse<StudentBooking>> {
+  // Get current user ID for validation
+  let studentId: string | undefined;
+  if (typeof window !== "undefined") {
+    const { getCurrentUser } = await import("../../lib/auth");
+    const user = getCurrentUser();
+    studentId = user?.id;
+  }
+  
+  // Client-side validation for better UX (backend will also validate)
+  if (studentId) {
+    const { canStudentBook } = await import("../utils/businessRules");
+    const validation = await canStudentBook(studentId);
+    if (!validation.canBook) {
+      return {
+        success: false,
+        message: validation.reason || "No puede reservar clases en este momento",
+        code: 422,
+      };
+    }
+  }
+  
+  // Validate resource requirement
+  if (payload.class_type_id) {
+    const { getClassTypeById } = await import("./classtype");
+    const classTypeResponse = await getClassTypeById(payload.class_type_id);
+    if (classTypeResponse.success && classTypeResponse.data) {
+      const { validateResourceRequirement } = await import("../utils/businessRules");
+      const resourceValidation = validateResourceRequirement(
+        classTypeResponse.data,
+        payload.resource_id
+      );
+      if (!resourceValidation.valid) {
+        return {
+          success: false,
+          message: resourceValidation.error || "Este tipo de clase requiere un recurso",
+          code: 422,
+        };
+      }
+    }
+  }
+  
   // If payload doesn't have resource_id, fetch it
   let finalPayload = { ...payload };
   
@@ -60,7 +103,42 @@ export async function bookClass(
     }
   }
   
-  return apiPost<StudentBooking>("/student/book-class", finalPayload);
+  const response = await apiPost<any>("/student/book-class", finalPayload);
+  
+  // Handle specific error messages
+  if (!response.success) {
+    // Map common backend error messages
+    if (response.message?.includes("límite de inasistencias")) {
+      return {
+        ...response,
+        message: "Ha superado el límite de inasistencias. No puede reservar nuevas clases.",
+      };
+    }
+    if (response.message?.includes("requiere un recurso")) {
+      return {
+        ...response,
+        message: "Este tipo de clase requiere un recurso",
+      };
+    }
+    if (response.message?.includes("ocupado")) {
+      return {
+        ...response,
+        message: "El recurso ya está ocupado en ese horario",
+      };
+    }
+  }
+  
+  if (response.success && response.data) {
+    const { transformStudentBookings } = await import("../utils/responseTransformers");
+    // Transform single booking (wrap in array, transform, then get first)
+    const transformed = transformStudentBookings([response.data]);
+    return {
+      ...response,
+      data: transformed[0],
+    };
+  }
+  
+  return response as ApiResponse<StudentBooking>;
 }
 
 /**
@@ -104,17 +182,41 @@ export async function getStudentBookings(
 /**
  * POST /student/cancel-booking
  * Cancels a student's booking
- * Payload transformed: { studentId, bookingId } -> { appointment_id, reason }
+ * Payload: { appointment_id, student_id?, reason? }
+ * Backend returns: { id, status: "cancelled", penalty_applied, penalty? }
  */
 export async function cancelBooking(
   payload: CancelBookingPayload
-): Promise<ApiResponse<{ message: string }>> {
-  // Ensure reason is always provided (use empty string if not)
-  const backendPayload = {
+): Promise<ApiResponse<CancelBookingResponse>> {
+  // Get current user ID if student_id not provided
+  let studentId = payload.student_id;
+  if (!studentId && typeof window !== "undefined") {
+    const { getCurrentUser } = await import("../../lib/auth");
+    const user = getCurrentUser();
+    studentId = user ? parseInt(user.id) : undefined;
+  }
+  
+  const backendPayload: any = {
     appointment_id: payload.appointment_id,
     reason: payload.reason || "",
   };
-  return apiPost<{ message: string }>("/student/cancel-booking", backendPayload);
+  
+  // Include student_id if available (backend may use authenticated user, but we include it for clarity)
+  if (studentId) {
+    backendPayload.student_id = studentId;
+  }
+  
+  const response = await apiPost<any>("/student/cancel-booking", backendPayload);
+  
+  if (response.success && response.data) {
+    // Backend returns data with penalty_applied and optional penalty fields
+    return {
+      ...response,
+      data: response.data as CancelBookingResponse,
+    };
+  }
+  
+  return response as ApiResponse<CancelBookingResponse>;
 }
 
 /**

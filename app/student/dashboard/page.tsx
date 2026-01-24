@@ -67,6 +67,7 @@ export default function StudentDashboardPage() {
   // Fines and debt state
   const [fines, setFines] = useState<Fine[]>([]);
   const [debt, setDebt] = useState<StudentDebt | null>(null);
+  const [canBook, setCanBook] = useState<{ canBook: boolean; reason?: string } | null>(null);
 
   // Cancel dialog state
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
@@ -120,6 +121,11 @@ export default function StudentDashboardPage() {
       } else {
         toast.error("Error al cargar deuda");
       }
+
+      // Check if student can book
+      const { canStudentBook } = await import("@/src/utils/businessRules");
+      const bookingValidation = await canStudentBook(user.id);
+      setCanBook(bookingValidation);
     } catch (error) {
       toast.error("Error al cargar datos del dashboard");
       console.error(error);
@@ -169,11 +175,20 @@ export default function StudentDashboardPage() {
       // Transform to backend format: bookingId -> appointment_id
       const response = await cancelBooking({
         appointment_id: parseInt(bookingToCancel.id),
+        student_id: parseInt(user.id),
         reason: "", // Optional, can be added later if needed
       });
 
       if (response.success) {
-        toast.success("Reserva cancelada exitosamente");
+        // Check if penalty was applied
+        if (response.data?.penalty_applied) {
+          toast.warning(
+            `Reserva cancelada. Se aplicó una multa de $${response.data.penalty?.amount?.toLocaleString("es-CO") || "N/A"} por cancelación tardía.`,
+            { duration: 6000 }
+          );
+        } else {
+          toast.success("Reserva cancelada exitosamente");
+        }
         setCancelDialogOpen(false);
         setBookingToCancel(null);
         // Reload data
@@ -439,9 +454,13 @@ export default function StudentDashboardPage() {
                       <Button
                         className="w-full"
                         onClick={() => handleBookClass(slot)}
-                        disabled={slot.availableSpots === 0}
+                        disabled={slot.availableSpots === 0 || (canBook !== null && !canBook.canBook)}
                       >
-                        {slot.availableSpots === 0 ? "Sin cupos" : "Reservar Clase"}
+                        {slot.availableSpots === 0 
+                          ? "Sin cupos" 
+                          : (canBook !== null && !canBook.canBook)
+                          ? "No disponible"
+                          : "Reservar Clase"}
                       </Button>
                     </CardContent>
                   </Card>

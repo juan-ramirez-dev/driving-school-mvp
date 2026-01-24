@@ -10,6 +10,7 @@ import { ApiResponse } from "../../utils/errorHandler";
 import type {
   TeacherClassesResponse,
   UpdateAttendancePayload,
+  UpdateAttendanceResponse,
   CancelClassPayload,
 } from "../../mocks/attendance";
 
@@ -37,7 +38,7 @@ export async function getTeacherClasses(
  */
 export async function updateAttendance(
   payload: UpdateAttendancePayload
-): Promise<ApiResponse<{ message: string }>> {
+): Promise<ApiResponse<UpdateAttendanceResponse>> {
   return isMockMode()
     ? mockApi.updateAttendance(payload)
     : realApi.updateAttendance(payload);

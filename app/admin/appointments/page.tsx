@@ -245,10 +245,24 @@ export default function AppointmentsPage() {
   const handleUpdateStatus = async (status: "scheduled" | "confirmed" | "cancelled" | "completed") => {
     if (!appointmentToUpdateStatus) return;
 
+    // Prevent changing status if already completed
+    if (appointmentToUpdateStatus.status === "completed") {
+      toast.error("No se puede modificar una clase finalizada");
+      return;
+    }
+
     try {
       const result = await updateAppointmentStatus(appointmentToUpdateStatus.id, status);
       if (result.success) {
-        toast.success("Estado de la cita actualizado exitosamente");
+        // Check if cancellation penalty was applied (when status = "cancelled")
+        if (status === "cancelled" && (result.data as any)?.penalty_applied) {
+          toast.warning(
+            "Estado actualizado. Se aplicó una multa por cancelación tardía.",
+            { duration: 6000 }
+          );
+        } else {
+          toast.success("Estado de la cita actualizado exitosamente");
+        }
         loadAppointments();
         setIsStatusDialogOpen(false);
         setAppointmentToUpdateStatus(null);
@@ -512,6 +526,8 @@ export default function AppointmentsPage() {
                             variant="outline"
                             size="sm"
                             onClick={() => handleOpenDialog(appointment)}
+                            disabled={appointment.status === "completed"}
+                            title={appointment.status === "completed" ? "No se puede modificar una clase finalizada" : "Editar"}
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
@@ -522,6 +538,8 @@ export default function AppointmentsPage() {
                               setAppointmentToUpdateStatus(appointment);
                               setIsStatusDialogOpen(true);
                             }}
+                            disabled={appointment.status === "completed"}
+                            title={appointment.status === "completed" ? "No se puede modificar una clase finalizada" : "Cambiar estado"}
                           >
                             Cambiar Estado
                           </Button>
@@ -532,6 +550,8 @@ export default function AppointmentsPage() {
                               setAppointmentToDelete(appointment);
                               setIsDeleteDialogOpen(true);
                             }}
+                            disabled={appointment.status === "completed"}
+                            title={appointment.status === "completed" ? "No se puede modificar una clase finalizada" : "Eliminar"}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>

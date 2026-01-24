@@ -45,6 +45,7 @@ import type {
   ClassType,
   AttendanceStatus,
   UpdateAttendancePayload,
+  UpdateAttendanceResponse,
   CancelClassPayload,
 } from "@/src/mocks/attendance";
 
@@ -146,13 +147,23 @@ export function TeacherClassesManager({ teacherId }: TeacherClassesManagerProps)
       };
 
       const result = await updateAttendance(payload);
-      if (result.success) {
-        toast.success("Asistencia actualizada exitosamente");
+      if (result.success && result.data) {
+        // Check if penalty was applied
+        // The API returns UpdateAttendanceResponse which includes penalty_applied
+        if (result.data.penalty_applied) {
+          toast.warning(
+            "Asistencia actualizada. Se aplicó una multa por inasistencia.",
+            { duration: 6000 }
+          );
+        } else {
+          toast.success("Asistencia actualizada exitosamente");
+        }
         setIsAttendanceModalOpen(false);
         setAttendanceData(null);
         loadClasses(); // Reload to get updated data
       } else {
-        toast.error(result.message || "Error al actualizar asistencia");
+        const errorMessage = "message" in result ? result.message : "Error al actualizar asistencia";
+        toast.error(errorMessage);
       }
     } catch (error) {
       toast.error("Error al actualizar asistencia");

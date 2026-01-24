@@ -137,7 +137,16 @@ export default function ClassTypesPage() {
         setIsDeleteDialogOpen(false);
         setClassTypeToDelete(null);
       } else {
-        toast.error(result.message || "Error al eliminar tipo de clase");
+        // Handle specific error for class type with associated appointments
+        if (
+          result.message?.includes("citas asociadas") ||
+          result.message?.includes("appointments") ||
+          result.code === 422
+        ) {
+          toast.error("No se puede eliminar un tipo de clase con citas asociadas");
+        } else {
+          toast.error(result.message || "Error al eliminar tipo de clase");
+        }
       }
     } catch (error) {
       toast.error("Error al eliminar tipo de clase");

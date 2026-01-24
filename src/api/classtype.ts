@@ -61,9 +61,26 @@ export async function updateClassType(
 /**
  * DELETE /api/classtype/{id}
  * Delete a class type
+ * Cannot delete if class type has associated appointments
  */
 export async function deleteClassType(
   id: string | number
 ): Promise<ApiResponse<{ message: string }>> {
-  return apiDelete<{ message: string }>(`/classtype/${id}`);
+  const response = await apiDelete<{ message: string }>(`/classtype/${id}`);
+  
+  // Handle specific error messages
+  if (!response.success) {
+    if (
+      response.message?.includes("citas asociadas") ||
+      response.message?.includes("appointments") ||
+      response.message?.includes("asociadas")
+    ) {
+      return {
+        ...response,
+        message: "No se puede eliminar un tipo de clase con citas asociadas",
+      };
+    }
+  }
+  
+  return response;
 }

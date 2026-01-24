@@ -215,13 +215,21 @@ export interface UpdateAttendancePayload {
   notes?: string;
 }
 
+export interface UpdateAttendanceResponse {
+  appointment_id: number;
+  student_id: number;
+  attended: boolean;
+  notes?: string;
+  penalty_applied: boolean;
+}
+
 /**
  * POST /teacher/classes/attendance
  * Updates attendance status for a student in a class
  */
 export async function updateAttendance(
   payload: UpdateAttendancePayload
-): Promise<ApiResponse<{ message: string }>> {
+): Promise<ApiResponse<UpdateAttendanceResponse>> {
   try {
     await simulateDelay();
 
@@ -268,7 +276,14 @@ export async function updateAttendance(
 
     return createSuccessResponse({
       message: "Attendance updated successfully",
-    });
+      data: {
+        appointment_id,
+        student_id,
+        attended,
+        notes: payload.notes,
+        penalty_applied: false, // Mock doesn't apply penalties, backend will
+      },
+    } as any);
   } catch (error) {
     return handleError(error, "Failed to update attendance");
   }
