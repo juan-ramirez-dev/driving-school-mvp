@@ -67,7 +67,6 @@ export function notifySuccess(message: string): void {
     timestamp: Date.now(),
   };
   notifications.push(notification);
-  console.log(`[NOTIFICATION SUCCESS] ${message}`);
 }
 
 /**

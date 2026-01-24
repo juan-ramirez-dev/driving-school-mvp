@@ -100,7 +100,6 @@ export function TeacherClassesManager({ teacherId }: TeacherClassesManagerProps)
       }
       
       const result = await getTeacherClasses(selectedDate, currentTeacherId);
-      console.log(result);
       if (result.success) {
         setTheoreticalClasses(result.data.theoreticalClasses);
         setPracticalClasses(result.data.practicalClasses);

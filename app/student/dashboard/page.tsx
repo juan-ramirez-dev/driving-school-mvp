@@ -98,11 +98,9 @@ export default function StudentDashboardPage() {
         getStudentDebt(user.id),
       ]);
 
-      console.log('slotsRes', slotsRes);
 
       if (slotsRes.success) {
         setAvailableSlots(slotsRes.data);
-        console.log('availableSlots', slotsRes.data);
       } else {
         toast.error("Error al cargar horarios disponibles");
       }
@@ -212,7 +210,6 @@ export default function StudentDashboardPage() {
   };
 
 
-  console.log('availableSlots', availableSlots);
 
   // Filter available slots
   const filteredSlots = availableSlots.filter((slot) => {
@@ -225,7 +222,6 @@ export default function StudentDashboardPage() {
     return true;
   });
 
-  console.log('filteredSlots', filteredSlots);
 
   // Get unique dates for filter
   const uniqueDates = Array.from(new Set(availableSlots.map((s) => s.date))).sort();
