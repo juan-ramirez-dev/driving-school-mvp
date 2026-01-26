@@ -65,10 +65,9 @@ export async function getAvailableSlots(filters?: {
 
 
   if (response.success && response.data) {
-    const { transformAvailableSlots } = await import("../utils/responseTransformers");
+    const { transformAvailableSlots } = require("../utils/responseTransformers");
     const transformed = transformAvailableSlots(response.data as ScheduleSlot[]);
 
-    console.log(transformed);
     return {
       ...response,
       data: transformed,

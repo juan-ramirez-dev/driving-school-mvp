@@ -16,6 +16,16 @@ export interface ApiError {
 export interface ApiSuccess<T> {
   success: true;
   data: T;
+  pagination?: PaginationMeta;
+}
+
+export interface PaginationMeta {
+  total: number;
+  per_page: number;
+  current_page: number;
+  last_page: number;
+  next_page_url?: string | null;
+  prev_page_url?: string | null;
 }
 
 export type ApiResponse<T> = ApiSuccess<T> | ApiError;

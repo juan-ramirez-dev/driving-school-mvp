@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { getCurrentUser, logout, isStudent } from "@/lib/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -58,11 +58,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Pagination } from "@/components/ui/pagination";
+import { debounce } from "@/src/utils/debounce";
+import { Loader2 } from "lucide-react";
 
 export default function StudentDashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState(getCurrentUser());
   const [isLoading, setIsLoading] = useState(true);
+  const [isFilterLoading, setIsFilterLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"slots" | "bookings" | "fines">("slots");
 
   // Available slots state
@@ -75,6 +79,12 @@ export default function StudentDashboardPage() {
   const [dateToFilter, setDateToFilter] = useState<string>("");
   const [teacherFilter, setTeacherFilter] = useState<string>("all");
   const [teachers, setTeachers] = useState<Teacher[]>([]);
+
+  // Pagination state
+  const [slotsPage, setSlotsPage] = useState(1);
+  const [bookingsPage, setBookingsPage] = useState(1);
+  const [slotsPerPage, setSlotsPerPage] = useState(12);
+  const [bookingsPerPage, setBookingsPerPage] = useState(10);
 
   // Bookings state
   const [bookings, setBookings] = useState<StudentBooking[]>([]);
@@ -99,14 +109,6 @@ export default function StudentDashboardPage() {
     loadDashboardData();
   }, [router]);
 
-  // Reload slots when API filters change
-  useEffect(() => {
-    if (user) {
-      loadSlots();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dateFromFilter, dateToFilter, teacherFilter, classTypeFilter]);
-
   const loadTeachers = async () => {
     try {
       const teachersRes = await getTeachers();
@@ -118,7 +120,7 @@ export default function StudentDashboardPage() {
     }
   };
 
-  const loadSlots = async () => {
+  const loadSlots = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -150,7 +152,6 @@ export default function StudentDashboardPage() {
         teacher_id?: number;
       });
 
-
       if (slotsRes.success) {
         setAvailableSlots(slotsRes.data);
       } else {
@@ -160,7 +161,35 @@ export default function StudentDashboardPage() {
       toast.error("Error al cargar horarios disponibles");
       console.error(error);
     }
-  };
+  }, [user, classTypeFilter, dateFromFilter, dateToFilter, teacherFilter]);
+
+  // Debounced load slots function
+  const debouncedLoadSlotsRef = useRef<(() => void) | null>(null);
+
+  // Initialize debounced function
+  useEffect(() => {
+    if (user) {
+      const loadSlotsWithLoading = async () => {
+        setIsFilterLoading(true);
+        try {
+          await loadSlots();
+        } finally {
+          setIsFilterLoading(false);
+        }
+      };
+      debouncedLoadSlotsRef.current = debounce(loadSlotsWithLoading, 500);
+    }
+  }, [user, loadSlots]);
+
+  // Reload slots when API filters change (debounced)
+  useEffect(() => {
+    if (user && debouncedLoadSlotsRef.current) {
+      // Reset to first page when filters change
+      setSlotsPage(1);
+      debouncedLoadSlotsRef.current();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dateFromFilter, dateToFilter, teacherFilter, classTypeFilter, user]);
 
   const loadDashboardData = async () => {
     if (!user) return;
@@ -168,10 +197,7 @@ export default function StudentDashboardPage() {
     try {
       setIsLoading(true);
 
-      // Load slots with current filters
-      await loadSlots();
-
-      // Load other data in parallel
+      // Load other data in parallel (slots are loaded separately via filter useEffect)
       // Note: studentId removed - backend uses authenticated user
       const [bookingsRes, finesRes, debtRes] = await Promise.all([
         getStudentBookings(user.id),
@@ -197,10 +223,16 @@ export default function StudentDashboardPage() {
         toast.error("Error al cargar deuda");
       }
 
-      // Check if student can book
-      const { canStudentBook } = await import("@/src/utils/businessRules");
-      const bookingValidation = await canStudentBook(user.id);
-      setCanBook(bookingValidation);
+      // Check if student can book (only if there are bookings or slots)
+      // This is expensive, so we'll call it lazily when needed
+      if (bookingsRes.success && bookingsRes.data.length > 0) {
+        const { canStudentBook } = await import("@/src/utils/businessRules");
+        const bookingValidation = await canStudentBook(user.id);
+        setCanBook(bookingValidation);
+      } else {
+        // Default to allowing booking if no bookings exist
+        setCanBook({ canBook: true });
+      }
     } catch (error) {
       toast.error("Error al cargar datos del dashboard");
       console.error(error);
@@ -281,26 +313,8 @@ export default function StudentDashboardPage() {
     toast.info("Sesión cerrada exitosamente");
   };
 
-
-  console.log(availableSlots);
-
-  // Filter available slots
-  const filteredSlots = availableSlots.filter((slot) => {
-    if (classTypeFilter !== "all" && slot.classType !== classTypeFilter) {
-      return false;
-    }
-    if (dateFilter !== "all-dates" && slot.date !== dateFilter) {
-      return false;
-    }
-    return true;
-  });
-
-
-  // Get unique dates for filter
-  const uniqueDates = Array.from(new Set(availableSlots.map((s) => s.date))).sort();
-
-  // Format date for display
-  const formatDate = (dateStr: string) => {
+  // Format date for display (memoized)
+  const formatDate = useCallback((dateStr: string) => {
     const date = new Date(dateStr);
     return date.toLocaleDateString("es-ES", {
       weekday: "long",
@@ -308,7 +322,57 @@ export default function StudentDashboardPage() {
       month: "long",
       day: "numeric",
     });
-  };
+  }, []);
+
+  // Filter available slots (memoized)
+  const filteredSlots = useMemo(() => {
+    return availableSlots.filter((slot) => {
+      // classTypeFilter is already applied server-side, but we keep client-side dateFilter
+      if (dateFilter !== "all-dates" && slot.date !== dateFilter) {
+        return false;
+      }
+      return true;
+    });
+  }, [availableSlots, dateFilter]);
+
+  // Get unique dates for filter (memoized)
+  const uniqueDates = useMemo(() => {
+    return Array.from(new Set(availableSlots.map((s) => s.date))).sort();
+  }, [availableSlots]);
+
+  // Paginated slots (memoized)
+  const paginatedSlots = useMemo(() => {
+    const startIndex = (slotsPage - 1) * slotsPerPage;
+    const endIndex = startIndex + slotsPerPage;
+    return filteredSlots.slice(startIndex, endIndex);
+  }, [filteredSlots, slotsPage, slotsPerPage]);
+
+  const totalSlotsPages = Math.ceil(filteredSlots.length / slotsPerPage);
+
+  // Paginated bookings (memoized)
+  const paginatedBookings = useMemo(() => {
+    const startIndex = (bookingsPage - 1) * bookingsPerPage;
+    const endIndex = startIndex + bookingsPerPage;
+    return bookings.slice(startIndex, endIndex);
+  }, [bookings, bookingsPage, bookingsPerPage]);
+
+  const totalBookingsPages = Math.ceil(bookings.length / bookingsPerPage);
+
+  // Memoized tab counters
+  const scheduledBookingsCount = useMemo(
+    () => bookings.filter((b) => b.status === "scheduled").length,
+    [bookings]
+  );
+
+  const unpaidFinesCount = useMemo(
+    () => fines.filter((f) => !f.isPaid).length,
+    [fines]
+  );
+
+  const totalUnpaidFines = useMemo(
+    () => fines.filter((f) => !f.isPaid).reduce((sum, f) => sum + f.amount, 0),
+    [fines]
+  );
 
   // Get status badge
   const getStatusBadge = (status: StudentBooking["status"]) => {
@@ -417,7 +481,7 @@ export default function StudentDashboardPage() {
             className="rounded-b-none"
           >
             <BookOpen className="mr-2 h-4 w-4" />
-            Mis Clases ({bookings.filter((b) => b.status === "scheduled").length})
+            Mis Clases ({scheduledBookingsCount})
           </Button>
           <Button
             variant={activeTab === "fines" ? "default" : "ghost"}
@@ -425,7 +489,7 @@ export default function StudentDashboardPage() {
             className="rounded-b-none"
           >
             <AlertCircle className="mr-2 h-4 w-4" />
-            Multas ({fines.filter((f) => !f.isPaid).length})
+            Multas ({unpaidFinesCount})
           </Button>
         </div>
 
@@ -531,7 +595,15 @@ export default function StudentDashboardPage() {
             </Card>
 
             {/* Slots List */}
-            {filteredSlots.length === 0 ? (
+            {isFilterLoading && (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <Loader2 className="h-8 w-8 mx-auto animate-spin text-muted-foreground mb-4" />
+                  <p className="text-sm text-muted-foreground">Cargando horarios disponibles...</p>
+                </CardContent>
+              </Card>
+            )}
+            {!isFilterLoading && filteredSlots.length === 0 && (
               <Card>
                 <CardContent className="py-12 text-center">
                   <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
@@ -541,61 +613,77 @@ export default function StudentDashboardPage() {
                   </p>
                 </CardContent>
               </Card>
-            ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {filteredSlots.map((slot) => (
-                  <Card key={slot.id} className="hover:shadow-lg transition-shadow">
-                    <CardHeader>
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <CardTitle className="text-lg">
-                            {slot.classType === "theoretical" ? "Clase Teórica" : "Clase Práctica"}
-                          </CardTitle>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {formatDate(slot.date)}
-                          </p>
+            )}
+            {!isFilterLoading && filteredSlots.length > 0 && (
+              <>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {paginatedSlots.map((slot) => (
+                    <Card key={slot.id} className="hover:shadow-lg transition-shadow">
+                      <CardHeader>
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <CardTitle className="text-lg">
+                              {slot.classType === "theoretical" ? "Clase Teórica" : "Clase Práctica"}
+                            </CardTitle>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {formatDate(slot.date)}
+                            </p>
+                          </div>
+                          <Badge
+                            variant={slot.classType === "theoretical" ? "default" : "secondary"}
+                          >
+                            {slot.classType === "theoretical" ? "Teórica" : "Práctica"}
+                          </Badge>
                         </div>
-                        <Badge
-                          variant={slot.classType === "theoretical" ? "default" : "secondary"}
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 text-sm">
+                            <Clock className="h-4 w-4 text-muted-foreground" />
+                            <span>
+                              {slot.startTime} - {slot.endTime}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm">
+                            <User className="h-4 w-4 text-muted-foreground" />
+                            <span>{slot.teacherName}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm">
+                            <Calendar className="h-4 w-4 text-muted-foreground" />
+                            <span>
+                              {slot.availableSpots} de {slot.totalSpots} cupos disponibles
+                            </span>
+                          </div>
+                        </div>
+                        <Button
+                          className="w-full"
+                          onClick={() => handleBookClass(slot)}
+                          disabled={slot.availableSpots === 0 || (canBook !== null && !canBook.canBook)}
                         >
-                          {slot.classType === "theoretical" ? "Teórica" : "Práctica"}
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-sm">
-                          <Clock className="h-4 w-4 text-muted-foreground" />
-                          <span>
-                            {slot.startTime} - {slot.endTime}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm">
-                          <User className="h-4 w-4 text-muted-foreground" />
-                          <span>{slot.teacherName}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm">
-                          <Calendar className="h-4 w-4 text-muted-foreground" />
-                          <span>
-                            {slot.availableSpots} de {slot.totalSpots} cupos disponibles
-                          </span>
-                        </div>
-                      </div>
-                      <Button
-                        className="w-full"
-                        onClick={() => handleBookClass(slot)}
-                        disabled={slot.availableSpots === 0 || (canBook !== null && !canBook.canBook)}
-                      >
-                        {slot.availableSpots === 0 
-                          ? "Sin cupos" 
-                          : (canBook !== null && !canBook.canBook)
-                          ? "No disponible"
-                          : "Reservar Clase"}
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                          {slot.availableSpots === 0 
+                            ? "Sin cupos" 
+                            : (canBook !== null && !canBook.canBook)
+                            ? "No disponible"
+                            : "Reservar Clase"}
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+                <Pagination
+                  currentPage={slotsPage}
+                  totalPages={totalSlotsPages}
+                  totalItems={filteredSlots.length}
+                  itemsPerPage={slotsPerPage}
+                  onPageChange={setSlotsPage}
+                  onItemsPerPageChange={(newPerPage) => {
+                    setSlotsPerPage(newPerPage);
+                    setSlotsPage(1);
+                  }}
+                  itemsPerPageOptions={[12, 24, 48]}
+                  showItemsPerPage={true}
+                />
+              </>
             )}
           </div>
         )}
@@ -614,8 +702,9 @@ export default function StudentDashboardPage() {
                 </CardContent>
               </Card>
             ) : (
-              <div className="space-y-4">
-                {bookings.map((booking) => (
+              <>
+                <div className="space-y-4">
+                  {paginatedBookings.map((booking) => (
                   <Card key={booking.id}>
                     <CardContent className="pt-6">
                       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
@@ -743,8 +832,24 @@ export default function StudentDashboardPage() {
                       </div>
                     </CardContent>
                   </Card>
-                ))}
-              </div>
+                  ))}
+                </div>
+                {bookings.length > bookingsPerPage && (
+                  <Pagination
+                    currentPage={bookingsPage}
+                    totalPages={totalBookingsPages}
+                    totalItems={bookings.length}
+                    itemsPerPage={bookingsPerPage}
+                    onPageChange={setBookingsPage}
+                    onItemsPerPageChange={(newPerPage) => {
+                      setBookingsPerPage(newPerPage);
+                      setBookingsPage(1);
+                    }}
+                    itemsPerPageOptions={[10, 20, 50]}
+                    showItemsPerPage={true}
+                  />
+                )}
+              </>
             )}
           </div>
         )}
@@ -802,11 +907,7 @@ export default function StudentDashboardPage() {
                       <div className="flex justify-between items-center">
                         <span className="text-lg font-semibold">Total Multas Pendientes:</span>
                         <span className="text-2xl font-bold text-red-600">
-                          $
-                          {fines
-                            .filter((f) => !f.isPaid)
-                            .reduce((sum, f) => sum + f.amount, 0)
-                            .toLocaleString("es-CO")}
+                          ${totalUnpaidFines.toLocaleString("es-CO")}
                         </span>
                       </div>
                     </div>
