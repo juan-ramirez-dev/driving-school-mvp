@@ -130,14 +130,17 @@ export async function canStudentBook(
     const debtResponse = await getStudentDebt(studentId);
     if (debtResponse.success && debtResponse.data) {
       const debt = debtResponse.data;
-      
-      // Check if student has debt or can_book is false
-      if (debt.totalDebt > 0 || (debt as any).can_book === false) {
-        return {
-          canBook: false,
-          reason: "No puede reservar clases mientras tenga deuda pendiente",
-        };
+
+      return {
+        canBook: true,
       }
+      // // Check if student has debt or can_book is false
+      // if (debt.totalDebt > 0 || (debt as any).can_book === false) {
+      //   return {
+      //     canBook: false,
+      //     reason: "No puede reservar clases mientras tenga deuda pendiente",
+      //   };
+      // }
     }
 
     // Check no-show limit
