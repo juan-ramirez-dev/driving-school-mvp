@@ -9,6 +9,7 @@ import type {
   Fine,
   StudentDebt,
   AvailableSlot,
+  ClassType as StudentClassType,
 } from "../mocks/student";
 import type { TeacherClassesResponse } from "../mocks/attendance";
 
@@ -172,28 +173,108 @@ function transformAppointmentToClass(appointment: any): any {
 
 /**
  * Transform available slots response
- * Backend: Grouped by teacher structure
+ * Backend: Nested structure with slots, teachers, resources, classTypes
  * Frontend: Flat array of AvailableSlot
+ * 
+ * Backend response structure:
+ * {
+ *   "slots": [
+ *     {
+ *       "date": "2026-01-26",
+ *       "startTime": "09:00",
+ *       "endTime": "10:00",
+ *       "options": [
+ *         {
+ *           "id": "slot_2_2026-01-26_0900_3",
+ *           "teacher_id": 2,
+ *           "resource_id": 3,
+ *           "class_type_id": 1,
+ *           "availableSpots": 17,
+ *           "totalCapacity": 20,
+ *           "currentBookings": 3
+ *         }
+ *       ]
+ *     }
+ *   ],
+ *   "teachers": { "2": { "id": 2, "name": "María García", "document": "87654321" } },
+ *   "resources": { "3": { "id": 3, "name": "Aula 101", "type": "classroom", "capacity": 20 } },
+ *   "classTypes": { "1": { "id": 1, "name": "Teórica", "requires_resource": true } }
+ * }
  */
-export function transformAvailableSlots(backendResponse: any[]): AvailableSlot[] {
-  // Backend returns flat array of slots with teacher, resource, and classType objects
-  // Structure: [{ id, date, startTime, endTime, teacher: {id, name, document}, resource: null, classType: {id, name, requires_resource} }]
-  return backendResponse.map((slot: any) => {
-    const teacherId = String(slot.teacher?.id || "");
-    const teacherName = slot.teacher?.name || "Instructor";
-    const classTypeId = slot.classType?.id;
-    const classType = classTypeId === 1 ? "theoretical" : "practical";
-    
+
+
+export interface ScheduleSlot {
+  id: string;
+  date: string; // YYYY-MM-DD
+  startTime: string; // HH:mm
+  endTime: string; // HH:mm
+  teacher: ScheduleTeacher;
+  resource: Resource;
+  classType: ClassType;
+  availableSpots: number;
+  totalCapacity: number;
+  currentBookings: number;
+}
+
+export interface ScheduleTeacher {
+  id: number;
+  name: string;
+  document: number;
+}
+
+export interface Resource {
+  id: number;
+  name: string;
+  type: ResourceType;
+  capacity: number;
+}
+
+export type ResourceType = 'classroom';
+
+export interface ClassType {
+  id: number;
+  name: string;
+  requires_resource: boolean;
+}
+
+
+export function transformAvailableSlots(backendResponse: ScheduleSlot[]): AvailableSlot[] {
+  return backendResponse.map((slotGroup: ScheduleSlot) => {
+    // Convert class type name to enum value
+    const classTypeName = slotGroup.classType.name?.toLowerCase() || "";
+    let classTypeEnum: StudentClassType = "practical";
+    if (
+      classTypeName.includes("teórica") ||
+      classTypeName.includes("teorica") ||
+      classTypeName.includes("theoretical") ||
+      slotGroup.classType.id === 1
+    ) {
+      classTypeEnum = "theoretical";
+    }
+
+    // Format time strings to HH:mm format
+    const startTime = slotGroup.startTime?.substring(0, 5) || slotGroup.startTime;
+    const endTime = slotGroup.endTime?.substring(0, 5) || slotGroup.endTime;
+
     return {
-      id: slot.id || `${teacherId}-${slot.date}-${slot.startTime}`,
-      date: slot.date,
-      startTime: slot.startTime?.substring(0, 5) || slot.startTime,
-      endTime: slot.endTime?.substring(0, 5) || slot.endTime,
-      classType: classType,
-      teacherId: teacherId,
-      teacherName: teacherName,
-      availableSpots: slot.availableSpots || slot.available_spots || 1,
-      totalSpots: slot.totalCapacity || slot.totalCapacity || 1,
+      id: slotGroup.id,
+      date: slotGroup.date,
+      startTime: startTime,
+      endTime: endTime,
+      classType: classTypeEnum,
+      teacherId: String(slotGroup.teacher.id),
+      teacherName: slotGroup.teacher.name,
+      availableSpots: slotGroup.availableSpots,
+      totalSpots: slotGroup.totalCapacity,
+      resourceId: slotGroup.resource.id,
+      resourceName: slotGroup.resource.name,
+      resourceType: slotGroup.resource.type,
+      resourceCapacity: slotGroup.resource.capacity,
+    } as AvailableSlot & {
+      resourceId: number;
+      resourceName: string;
+      resourceType: ResourceType;
+      resourceCapacity: number;
     };
   });
 }

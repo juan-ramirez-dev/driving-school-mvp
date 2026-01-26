@@ -19,13 +19,22 @@ import type {
 
 /**
  * GET /student/available-slots
+ * Supports filters: classType, date_from, date_to, teacher_id
  */
 export async function getAvailableSlots(
-  classType?: "theoretical" | "practical"
+  filters?: {
+    classType?: "theoretical" | "practical";
+    date_from?: string;
+    date_to?: string;
+    teacher_id?: number;
+  }
 ): Promise<ApiResponse<AvailableSlot[]>> {
-  return isMockMode()
-    ? mockApi.getAvailableSlots(classType)
-    : realApi.getAvailableSlots(classType);
+  if (isMockMode()) {
+    // Mock API only supports classType filter for now
+    return mockApi.getAvailableSlots(filters?.classType);
+  }
+  // Real API supports all filters
+  return realApi.getAvailableSlots(filters);
 }
 
 /**

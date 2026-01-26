@@ -136,6 +136,10 @@ export async function deleteTeacher(
 /**
  * GET /teachers/availability
  * Retrieves teacher availability data
+ * 
+ * @deprecated This endpoint is obsolete. Use /api/teacher-schedules instead.
+ * See API_CONTRACTS.md section 7 for the new endpoints.
+ * This function is kept for backward compatibility but should be migrated.
  */
 export async function getTeacherAvailability(): Promise<
   ApiResponse<TeacherAvailability[]>
@@ -157,6 +161,10 @@ export async function getTeacherAvailability(): Promise<
  * POST /teachers/availability
  * Sets teacher availability by time blocks
  * Backend expects: { user_id, availability: [{ date, start_time, end_time, day_of_week, slot_minutes }] }
+ * 
+ * @deprecated This endpoint is obsolete. Use /api/teacher-schedules instead.
+ * See API_CONTRACTS.md section 7 for the new endpoints.
+ * This function is kept for backward compatibility but should be migrated.
  */
 export async function setTeacherAvailability(
   data: Omit<TeacherAvailability, "availableSlots">

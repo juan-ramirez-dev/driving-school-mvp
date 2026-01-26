@@ -19,7 +19,10 @@ export interface Appointment {
   teacher?: {
     id: number;
     name: string;
+    last_name?: string;
     document: string;
+    email?: string;
+    number_phone?: string;
   };
   student?: {
     id: number;
@@ -35,6 +38,12 @@ export interface Appointment {
     id: number;
     name: string;
     type: "classroom" | "vehicle";
+    plate?: string | null;
+    brand?: string | null;
+    model?: string | null;
+    year?: number | null;
+    color?: string | null;
+    capacity?: number | null;
   };
 }
 

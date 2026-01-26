@@ -21,17 +21,16 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Edit, Trash2, Calendar } from "lucide-react";
+import { Plus, Edit, Trash2, Calendar, ExternalLink } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   getTeachers,
   createTeacher,
   updateTeacher,
   deleteTeacher,
-  getTeacherAvailability,
-  setTeacherAvailability,
 } from "@/src/api";
-import type { Teacher, TeacherAvailability, TimeBlockSize } from "@/src/mocks/types";
+import type { Teacher } from "@/src/mocks/types";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -44,15 +43,13 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export default function TeachersPage() {
+  const router = useRouter();
   const [teachers, setTeachers] = useState<Teacher[]>([]);
-  const [availability, setAvailability] = useState<TeacherAvailability[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isAvailabilityDialogOpen, setIsAvailabilityDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [teacherToDelete, setTeacherToDelete] = useState<Teacher | null>(null);
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
-  const [selectedTeacherForAvailability, setSelectedTeacherForAvailability] = useState<Teacher | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     last_name: "",
@@ -60,12 +57,6 @@ export default function TeachersPage() {
     phone: "",
     document: "",
     licenseNumber: "",
-  });
-  const [availabilityForm, setAvailabilityForm] = useState({
-    date: "",
-    startTime: "08:00",
-    endTime: "17:00",
-    blockSize: "1h" as TimeBlockSize,
   });
 
   useEffect(() => {
@@ -75,17 +66,10 @@ export default function TeachersPage() {
   const loadData = async () => {
     try {
       setIsLoading(true);
-      const [teachersRes, availabilityRes] = await Promise.all([
-        getTeachers(),
-        getTeacherAvailability(),
-      ]);
+      const teachersRes = await getTeachers();
 
       if (teachersRes.success) {
         setTeachers(teachersRes.data);
-      }
-
-      if (availabilityRes.success) {
-        setAvailability(availabilityRes.data);
       }
     } catch (error) {
       toast.error("Error al cargar datos");
@@ -190,46 +174,9 @@ export default function TeachersPage() {
     }
   };
 
-  const handleOpenAvailabilityDialog = (teacher: Teacher) => {
-    setSelectedTeacherForAvailability(teacher);
-    setIsAvailabilityDialogOpen(true);
-  };
-
-  const handleCloseAvailabilityDialog = () => {
-    setIsAvailabilityDialogOpen(false);
-    setSelectedTeacherForAvailability(null);
-    setAvailabilityForm({
-      date: "",
-      startTime: "08:00",
-      endTime: "17:00",
-      blockSize: "1h",
-    });
-  };
-
-  const handleSubmitAvailability = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedTeacherForAvailability) return;
-
-    try {
-      const result = await setTeacherAvailability({
-        teacherId: selectedTeacherForAvailability.id,
-        ...availabilityForm,
-      });
-      if (result.success) {
-        toast.success("Disponibilidad configurada exitosamente");
-        loadData();
-        handleCloseAvailabilityDialog();
-      } else {
-        toast.error(result.message || "Error al configurar disponibilidad");
-      }
-    } catch (error) {
-      toast.error("Error al configurar disponibilidad");
-      console.error(error);
-    }
-  };
-
-  const getTeacherAvailabilityCount = (teacherId: string) => {
-    return availability.filter((a) => a.teacherId === teacherId).length;
+  const handleManageSchedules = (teacher: Teacher) => {
+    // Navigate to schedules page with teacher pre-selected
+    router.push(`/admin/schedules?teacher=${teacher.id}`);
   };
 
   if (isLoading) {
@@ -390,10 +337,11 @@ export default function TeachersPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleOpenAvailabilityDialog(teacher)}
-                          title="Configurar disponibilidad"
+                          onClick={() => handleManageSchedules(teacher)}
+                          title="Gestionar horarios"
                         >
-                          <Calendar className="h-4 w-4" />
+                          <Calendar className="h-4 w-4 mr-1" />
+                          <ExternalLink className="h-3 w-3" />
                         </Button>
                         <Button
                           variant="ghost"
@@ -419,91 +367,6 @@ export default function TeachersPage() {
           </Table>
         </CardContent>
       </Card>
-
-      {/* Availability Dialog */}
-      <Dialog open={isAvailabilityDialogOpen} onOpenChange={setIsAvailabilityDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              Configurar Disponibilidad - {selectedTeacherForAvailability?.name}
-            </DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleSubmitAvailability} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="date">Fecha</Label>
-              <Input
-                id="date"
-                type="date"
-                value={availabilityForm.date}
-                onChange={(e) =>
-                  setAvailabilityForm({ ...availabilityForm, date: e.target.value })
-                }
-                required
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="startTime">Hora Inicio</Label>
-                <Input
-                  id="startTime"
-                  type="time"
-                  value={availabilityForm.startTime}
-                  onChange={(e) =>
-                    setAvailabilityForm({
-                      ...availabilityForm,
-                      startTime: e.target.value,
-                    })
-                  }
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="endTime">Hora Fin</Label>
-                <Input
-                  id="endTime"
-                  type="time"
-                  value={availabilityForm.endTime}
-                  onChange={(e) =>
-                    setAvailabilityForm({
-                      ...availabilityForm,
-                      endTime: e.target.value,
-                    })
-                  }
-                  required
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="blockSize">Tamaño de Bloque</Label>
-              <Select
-                value={availabilityForm.blockSize}
-                onValueChange={(value) =>
-                  setAvailabilityForm({
-                    ...availabilityForm,
-                    blockSize: value as TimeBlockSize,
-                  })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="15min">15 minutos</SelectItem>
-                  <SelectItem value="30min">30 minutos</SelectItem>
-                  <SelectItem value="1h">1 hora</SelectItem>
-                  <SelectItem value="2h">2 horas</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={handleCloseAvailabilityDialog}>
-                Cancelar
-              </Button>
-              <Button type="submit">Guardar</Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>

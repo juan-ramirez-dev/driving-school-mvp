@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -46,7 +47,8 @@ import {
 
 const DAY_NAMES = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 
-export default function SchedulesPage() {
+function SchedulesPageContent() {
+  const searchParams = useSearchParams();
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [classTypes, setClassTypes] = useState<ClassType[]>([]);
   const [selectedTeacher, setSelectedTeacher] = useState<string>("");
@@ -68,7 +70,13 @@ export default function SchedulesPage() {
   useEffect(() => {
     loadTeachers();
     loadClassTypes();
-  }, []);
+    
+    // Check if teacher is provided in query params
+    const teacherParam = searchParams?.get("teacher");
+    if (teacherParam) {
+      setSelectedTeacher(teacherParam);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (selectedTeacher) {
@@ -549,5 +557,19 @@ export default function SchedulesPage() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+  );
+}
+
+export default function SchedulesPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-[400px]">
+          <p className="text-muted-foreground">Cargando...</p>
+        </div>
+      }
+    >
+      <SchedulesPageContent />
+    </Suspense>
   );
 }

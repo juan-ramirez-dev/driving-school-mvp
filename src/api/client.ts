@@ -121,6 +121,23 @@ async function apiRequest<T>(
 
     const data = await response.json();
     
+    // Check if backend returned an error response (even with HTTP 200)
+    // Laravel ResponseHelper::error() can return HTTP 200 with { status: "error", message: "..." }
+    if (
+      data &&
+      typeof data === "object" &&
+      !Array.isArray(data) &&
+      "status" in data &&
+      data.status === "error"
+    ) {
+      // This is an error response, handle it as an error
+      return handleError(
+        data,
+        data.message || "An error occurred",
+        response.status as HttpErrorCode
+      );
+    }
+    
     // Backend returns nested structure: { status, message, data: [...], pagination: {...} }
     // Extract the actual data from data.data if it exists and data is an object with status/message
     // This handles Laravel ResponseHelper::paginated format

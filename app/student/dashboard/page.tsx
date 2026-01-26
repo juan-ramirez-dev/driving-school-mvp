@@ -31,6 +31,7 @@ import {
   cancelBooking,
   getStudentFines,
   getStudentDebt,
+  getTeachers,
 } from "@/src/api";
 import type {
   AvailableSlot,
@@ -38,6 +39,7 @@ import type {
   Fine,
   StudentDebt,
 } from "@/src/mocks/student";
+import type { Teacher } from "@/src/mocks/types";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -55,6 +57,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 
 export default function StudentDashboardPage() {
   const router = useRouter();
@@ -66,6 +69,12 @@ export default function StudentDashboardPage() {
   const [availableSlots, setAvailableSlots] = useState<AvailableSlot[]>([]);
   const [classTypeFilter, setClassTypeFilter] = useState<"theoretical" | "practical" | "all">("all");
   const [dateFilter, setDateFilter] = useState<string>("all-dates");
+  
+  // API filters (sent to backend)
+  const [dateFromFilter, setDateFromFilter] = useState<string>("");
+  const [dateToFilter, setDateToFilter] = useState<string>("");
+  const [teacherFilter, setTeacherFilter] = useState<string>("all");
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
 
   // Bookings state
   const [bookings, setBookings] = useState<StudentBooking[]>([]);
@@ -86,23 +95,60 @@ export default function StudentDashboardPage() {
       return;
     }
     setUser(currentUser);
+    loadTeachers();
     loadDashboardData();
   }, [router]);
 
-  const loadDashboardData = async () => {
+  // Reload slots when API filters change
+  useEffect(() => {
+    if (user) {
+      loadSlots();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dateFromFilter, dateToFilter, teacherFilter, classTypeFilter]);
+
+  const loadTeachers = async () => {
+    try {
+      const teachersRes = await getTeachers();
+      if (teachersRes.success) {
+        setTeachers(teachersRes.data);
+      }
+    } catch (error) {
+      console.error("Error loading teachers:", error);
+    }
+  };
+
+  const loadSlots = async () => {
     if (!user) return;
 
     try {
-      setIsLoading(true);
+      // Build filters object
+      const filters: {
+        classType?: "theoretical" | "practical";
+        date_from?: string;
+        date_to?: string;
+        teacher_id?: number;
+      } = {};
 
-      // Load all data in parallel
-      // Note: studentId removed - backend uses authenticated user
-      const [slotsRes, bookingsRes, finesRes, debtRes] = await Promise.all([
-        getStudentAvailableSlots(),
-        getStudentBookings(user.id),
-        getStudentFines(user.id),
-        getStudentDebt(user.id),
-      ]);
+      if (classTypeFilter !== "all") {
+        filters.classType = classTypeFilter;
+      }
+      if (dateFromFilter) {
+        filters.date_from = dateFromFilter;
+      }
+      if (dateToFilter) {
+        filters.date_to = dateToFilter;
+      }
+      if (teacherFilter !== "all") {
+        filters.teacher_id = parseInt(teacherFilter);
+      }
+
+      const slotsRes = await getStudentAvailableSlots(filters as {
+        classType?: "theoretical" | "practical";
+        date_from?: string;
+        date_to?: string;
+        teacher_id?: number;
+      });
 
 
       if (slotsRes.success) {
@@ -110,6 +156,28 @@ export default function StudentDashboardPage() {
       } else {
         toast.error("Error al cargar horarios disponibles");
       }
+    } catch (error) {
+      toast.error("Error al cargar horarios disponibles");
+      console.error(error);
+    }
+  };
+
+  const loadDashboardData = async () => {
+    if (!user) return;
+
+    try {
+      setIsLoading(true);
+
+      // Load slots with current filters
+      await loadSlots();
+
+      // Load other data in parallel
+      // Note: studentId removed - backend uses authenticated user
+      const [bookingsRes, finesRes, debtRes] = await Promise.all([
+        getStudentBookings(user.id),
+        getStudentFines(user.id),
+        getStudentDebt(user.id),
+      ]);
 
       if (bookingsRes.success) {
         setBookings(bookingsRes.data);
@@ -154,15 +222,13 @@ export default function StudentDashboardPage() {
         date: slot.date,
         start_time: slot.startTime,
         end_time: slot.endTime,
-        // resource_id will be fetched automatically by the API function
       });
 
-      if (response.success) {
+      if (response.success && response.data) {
         toast.success("¡Clase reservada exitosamente!");
-        // Reload data
-        await loadDashboardData();
+        router.push(`/student/appointment/${response.data.id}`);
       } else {
-        toast.error(response.message || "Error al reservar clase");
+        toast.error("Error al reservar clase");
       }
     } catch (error) {
       toast.error("Error al reservar clase");
@@ -216,6 +282,7 @@ export default function StudentDashboardPage() {
   };
 
 
+  console.log(availableSlots);
 
   // Filter available slots
   const filteredSlots = availableSlots.filter((slot) => {
@@ -371,41 +438,94 @@ export default function StudentDashboardPage() {
                 <CardTitle>Filtros</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <div className="flex-1">
-                    <label className="text-sm font-medium mb-2 block">Tipo de Clase</label>
-                    <Select
-                      value={classTypeFilter}
-                      onValueChange={(value) =>
-                        setClassTypeFilter(value as "theoretical" | "practical" | "all")
-                      }
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="flex-1">
+                      <label className="text-sm font-medium mb-2 block">Tipo de Clase</label>
+                      <Select
+                        value={classTypeFilter}
+                        onValueChange={(value) =>
+                          setClassTypeFilter(value as "theoretical" | "practical" | "all")
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todos</SelectItem>
+                          <SelectItem value="theoretical">Teórica</SelectItem>
+                          <SelectItem value="practical">Práctica</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex-1">
+                      <label className="text-sm font-medium mb-2 block">Instructor</label>
+                      <Select value={teacherFilter} onValueChange={setTeacherFilter}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Todos los instructores" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todos los instructores</SelectItem>
+                          {teachers.map((teacher) => (
+                            <SelectItem key={teacher.id} value={teacher.id}>
+                              {teacher.name} {teacher.last_name || ""}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex-1">
+                      <label className="text-sm font-medium mb-2 block">Fecha Desde</label>
+                      <Input
+                        type="date"
+                        value={dateFromFilter}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDateFromFilter(e.target.value)}
+                        min={new Date().toISOString().split("T")[0]}
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <label className="text-sm font-medium mb-2 block">Fecha Hasta</label>
+                      <Input
+                        type="date"
+                        value={dateToFilter}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDateToFilter(e.target.value)}
+                        min={dateFromFilter || new Date().toISOString().split("T")[0]}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setDateFromFilter("");
+                        setDateToFilter("");
+                        setTeacherFilter("all");
+                        setClassTypeFilter("all");
+                      }}
                     >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Todos</SelectItem>
-                        <SelectItem value="theoretical">Teórica</SelectItem>
-                        <SelectItem value="practical">Práctica</SelectItem>
-                      </SelectContent>
-                    </Select>
+                      Limpiar Filtros
+                    </Button>
                   </div>
-                  <div className="flex-1">
-                    <label className="text-sm font-medium mb-2 block">Fecha</label>
-                    <Select value={dateFilter} onValueChange={setDateFilter}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Todas las fechas" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all-dates">Todas las fechas</SelectItem>
-                        {uniqueDates.map((date) => (
-                          <SelectItem key={date} value={date}>
-                            {formatDate(date)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  {/* Client-side date filter (for quick selection from available dates) */}
+                  {uniqueDates.length > 0 && (
+                    <div className="flex-1">
+                      <label className="text-sm font-medium mb-2 block">Filtrar por Fecha Específica</label>
+                      <Select value={dateFilter} onValueChange={setDateFilter}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Todas las fechas" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all-dates">Todas las fechas</SelectItem>
+                          {uniqueDates.map((date) => (
+                            <SelectItem key={date} value={date}>
+                              {formatDate(date)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

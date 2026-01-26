@@ -101,6 +101,8 @@ GET /api/dashboard/completed-reservations?teacher=2
 
 **Cambio:** Ahora retorna formato consistente con `ResponseHelper::success()`.
 
+**Nota:** Los endpoints obsoletos `/api/teachers/availability` y `/api/teachers/availability/all` han sido eliminados. Use `/api/teacher-schedules` en su lugar, que cumple con todos los requisitos de funcionalidad.
+
 **Nueva estructura de respuesta:**
 ```json
 {
@@ -1199,6 +1201,8 @@ GET /api/resources?type=vehicle&per_page=20
 
 ## 7. Horarios de Profesores (Teacher Schedules)
 
+**Nota importante:** Los endpoints de esta sección (`/api/teacher-schedules`) reemplazan y cumplen con todos los requisitos de los endpoints obsoletos `/api/teachers/availability`. Use estos endpoints para gestionar los horarios y disponibilidad de los profesores.
+
 ### 7.1 Listar Horarios de Profesor
 **GET** `/api/teacher-schedules`
 
@@ -1382,12 +1386,16 @@ GET /api/teacher-schedules?teacher_id=2
     {
       "id": 1,
       "setting_key": "attendance_tolerance_minutes",
+      "name": "Tolerancia en minutos (asistencia)",
+      "description": "Tolerancia en minutos (ej. llegada tarde vs. asistió).",
       "type": "int",
       "value": 10
     },
     {
       "id": 2,
       "setting_key": "max_appointments_per_day",
+      "name": null,
+      "description": null,
       "type": "string",
       "value": "5"
     }
@@ -1417,6 +1425,8 @@ GET /api/system-settings/attendance_tolerance_minutes
   "message": "Configuración encontrada",
   "data": {
     "setting_key": "attendance_tolerance_minutes",
+    "name": "Tolerancia en minutos (asistencia)",
+    "description": "Tolerancia en minutos (ej. llegada tarde vs. asistió).",
     "type": "int",
     "value": 10
   }
@@ -1435,7 +1445,9 @@ GET /api/system-settings/attendance_tolerance_minutes
 {
   "setting_key": "max_appointments_per_day",
   "type": "int",
-  "value": "5"
+  "value": "5",
+  "name": "Máximo de citas por día",
+  "description": "Límite de citas por día (opcional)."
 }
 ```
 
@@ -1443,6 +1455,8 @@ GET /api/system-settings/attendance_tolerance_minutes
 - `setting_key`: requerido, string, único en system_settings
 - `type`: requerido, valores permitidos: `string`, `int`, `bool`, `json`
 - `value`: requerido
+- `name`: opcional, string. Nombre legible de la configuración.
+- `description`: opcional, string. Descripción de qué hace la configuración.
 
 **Response 201:**
 ```json
@@ -1452,6 +1466,8 @@ GET /api/system-settings/attendance_tolerance_minutes
   "data": {
     "id": 3,
     "setting_key": "max_appointments_per_day",
+    "name": "Máximo de citas por día",
+    "description": "Límite de citas por día (opcional).",
     "type": "int",
     "value": 5,
     "created_at": "2026-01-20T10:00:00.000000Z",
@@ -1474,20 +1490,24 @@ GET /api/system-settings/attendance_tolerance_minutes
 ```json
 {
   "type": "int",
-  "value": "10"
+  "value": "10",
+  "name": "Máximo de citas por día",
+  "description": "Límite de citas por día (opcional)."
 }
 ```
 
 **Validaciones:**
 - `type`: requerido, valores permitidos: `string`, `int`, `bool`, `json`
 - `value`: requerido
+- `name`: opcional, string. Nombre legible de la configuración.
+- `description`: opcional, string. Descripción de qué hace la configuración.
 
 **Response 200:**
 ```json
 {
   "status": "success",
   "message": "Configuración actualizada correctamente",
-  "data": { /* objeto SystemSetting actualizado */ }
+  "data": { "id", "setting_key", "name", "description", "type", "value", "created_at", "updated_at" }
 }
 ```
 
@@ -1516,6 +1536,8 @@ GET /api/system-settings/attendance_tolerance_minutes
 
 Las siguientes claves en `system_settings` parametrizan las reglas de cancelación y asistencia. Se gestionan con los endpoints de System Settings (`GET`/`PUT` `/api/system-settings`, etc.). Valores por defecto provienen del `SchoolSettingsSeeder`.
 
+**Nota:** Cada configuración puede tener campos opcionales `name` (nombre legible) y `description` (descripción de qué hace la configuración) para facilitar la gestión desde la interfaz de administración.
+
 **Reglas de cancelación:**
 
 | Key | Tipo | Descripción | Default |
@@ -1534,6 +1556,14 @@ Las siguientes claves en `system_settings` parametrizan las reglas de cancelaci�
 | `attendance_no_show_penalty_enabled` | bool | ¿Hay multa por inasistencia? | true |
 | `attendance_no_show_penalty_amount` | int | Monto de la multa por inasistencia | 50000 |
 | `attendance_no_show_limit` | int | Límite de inasistencias; al superarlo no se pueden reservar nuevas clases | 3 |
+
+**Agendamiento (estudiantes):**
+
+| Key | Tipo | Descripción | Default |
+|-----|------|-------------|---------|
+| `scheduling_days_limit` | int | Número de días hacia adelante que se muestran en el agendamiento para estudiantes (GET `/api/student/available-slots`). Ej.: 7 = mostrar los próximos 7 días. Se aplica tanto por defecto como límite máximo del rango cuando se envían `date_from`/`date_to`. | 7 |
+
+**Efecto en GET `/api/student/available-slots`:** Si no se envían `date_from` ni `date_to`, el rango por defecto es hoy hasta hoy + (`scheduling_days_limit` - 1). Si se envían, el rango se acota a `scheduling_days_limit` días como máximo y `date_to` no supera hoy + 90.
 
 ---
 
@@ -1879,81 +1909,6 @@ GET /api/penalties?user_id=1
 ```json
 {
   "message": "Profesor eliminado correctamente"
-}
-```
-
----
-
-### 11.6 Disponibilidad de Profesores
-**GET** `/api/teachers/availability`
-
-**Autenticación:** Requerida
-
-**Query Parameters:**
-- `teacher_id` (integer, opcional): ID del profesor
-- `date` (date, opcional): Fecha a consultar (YYYY-MM-DD)
-
-**Response 200:**
-```json
-{
-  "status": "success",
-  "message": "Disponibilidad de profesores",
-  "data": [
-    {
-      "teacher_id": 2,
-      "teacher_name": "María",
-      "date": "2026-01-25",
-      "available_slots": [
-        {
-          "start": "09:00",
-          "end": "10:00"
-        },
-        {
-          "start": "10:00",
-          "end": "11:00"
-        }
-      ]
-    }
-  ]
-}
-```
-
----
-
-### 11.7 Crear Disponibilidad de Profesor
-**POST** `/api/teachers/availability`
-
-**Autenticación:** Requerida
-
-**Body:**
-```json
-{
-  "teacher_id": 2,
-  "date": "2026-01-25",
-  "start_time": "09:00",
-  "end_time": "17:00",
-  "slot_minutes": 60
-}
-```
-
-**Validaciones:**
-- `teacher_id`: requerido, debe existir en users
-- `date`: requerido, formato fecha (YYYY-MM-DD)
-- `start_time`: requerido, formato hora (HH:i)
-- `end_time`: requerido, formato hora (HH:i)
-- `slot_minutes`: opcional, integer
-
-**Response 201:**
-```json
-{
-  "status": "success",
-  "message": "Disponibilidad creada correctamente",
-  "data": {
-    "teacher_id": 2,
-    "date": "2026-01-25",
-    "start_time": "09:00",
-    "end_time": "17:00"
-  }
 }
 ```
 
@@ -2829,34 +2784,101 @@ GET /api/dashboard/completed-reservations?teacher=2
 **Autenticación:** Requerida
 
 **Query Parameters:**
-- `teacher_id` (integer, opcional): ID del profesor
-- `date` (date, opcional): Fecha (YYYY-MM-DD)
-- `class_type_id` (integer, opcional): ID del tipo de clase
+- `classType` (string, opcional): Filtrar por tipo de clase. Valores: `"theoretical"` o `"practical"`
+- `date_from` (date, opcional): Fecha de inicio del rango (YYYY-MM-DD). Si no se proporciona, se usa la fecha actual
+- `date_to` (date, opcional): Fecha de fin del rango (YYYY-MM-DD). Si no se proporciona, se calcula según `scheduling_days_limit`
+- `teacher_id` (integer, opcional): Filtrar por ID del profesor
+
+**Notas sobre el rango de fechas:**
+- Si no se envían `date_from` ni `date_to`, el rango por defecto es desde hoy hasta hoy + (`scheduling_days_limit` - 1) días
+- El setting `scheduling_days_limit` (default: 7) controla cuántos días se muestran
+- Si se envían `date_from` y/o `date_to`, el rango se ajusta automáticamente:
+  - `date_from` no puede ser anterior a hoy
+  - El rango máximo es `scheduling_days_limit` días
+  - `date_to` no puede superar hoy + 90 días
+- Si solo se envía `date_from`, `date_to` se calcula como `date_from + (scheduling_days_limit - 1)`
+- Si solo se envía `date_to`, `date_from` se establece como hoy
+
+**Ejemplo:**
+```
+GET /api/student/available-slots?classType=theoretical&date_from=2026-01-26&date_to=2026-01-30
+```
 
 **Response 200:**
 ```json
 {
   "status": "success",
-  "message": "Slots disponibles",
-  "data": [
-    {
-      "teacher_id": 2,
-      "teacher_name": "María",
-      "date": "2026-01-25",
-      "slots": [
-        {
-          "start": "09:00",
-          "end": "10:00"
-        },
-        {
-          "start": "10:00",
-          "end": "11:00"
-        }
-      ]
+  "message": "Slots disponibles obtenidos correctamente",
+  "data": {
+    "slots": [
+      {
+        "date": "2026-01-26",
+        "startTime": "09:00",
+        "endTime": "10:00",
+        "options": [
+          {
+            "id": "slot_2_2026-01-26_0900_3",
+            "teacher_id": 2,
+            "resource_id": 3,
+            "class_type_id": 1,
+            "availableSpots": 17,
+            "totalCapacity": 20,
+            "currentBookings": 3
+          }
+        ]
+      },
+      {
+        "date": "2026-01-26",
+        "startTime": "10:00",
+        "endTime": "11:00",
+        "options": [
+          {
+            "id": "slot_2_2026-01-26_1000",
+            "teacher_id": 2,
+            "resource_id": null,
+            "class_type_id": 2
+          }
+        ]
+      }
+    ],
+    "teachers": {
+      "2": {
+        "id": 2,
+        "name": "María García",
+        "document": "87654321"
+      }
+    },
+    "resources": {
+      "3": {
+        "id": 3,
+        "name": "Aula 101",
+        "type": "classroom",
+        "capacity": 20
+      }
+    },
+    "classTypes": {
+      "1": {
+        "id": 1,
+        "name": "Teórica",
+        "requires_resource": true
+      },
+      "2": {
+        "id": 2,
+        "name": "Práctica",
+        "requires_resource": true
+      }
     }
-  ]
+  }
 }
 ```
+
+**Estructura de la respuesta:**
+- `slots`: Array de bloques de tiempo agrupados por fecha, hora inicio y hora fin
+  - Cada bloque tiene `options` con las diferentes combinaciones de profesor/recurso/tipo de clase disponibles
+  - Si el tipo de clase requiere recurso con capacidad, cada opción incluye `availableSpots`, `totalCapacity` y `currentBookings`
+- `teachers`: Mapa (objeto) de profesores por ID con información básica
+- `resources`: Mapa (objeto) de recursos por ID con información básica
+- `classTypes`: Mapa (objeto) de tipos de clase por ID con información básica
 
 ---
 
@@ -3072,11 +3094,13 @@ Cuando se aplica multa: `penalty_applied` = true y se incluye `penalty`: `{ "id"
 
 6. **Recursos y Tipos de Clase:** Al crear una cita, si el tipo de clase tiene `requires_resource = true`, es obligatorio proporcionar un `resource_id`.
 
-7. **Horarios Disponibles:** El endpoint `/appointments/available-slots` calcula los slots disponibles considerando:
-   - Horarios del profesor para ese día
-   - Bloques de tiempo bloqueados
-   - Citas existentes del profesor
-   - Si requiere recurso: citas existentes del recurso
+7. **Horarios Disponibles:** 
+   - El endpoint `/appointments/available-slots` calcula los slots disponibles para una fecha específica considerando:
+     - Horarios del profesor para ese día
+     - Bloques de tiempo bloqueados
+     - Citas existentes del profesor
+     - Si requiere recurso: citas existentes del recurso
+   - El endpoint `/api/student/available-slots` retorna slots disponibles para un rango de fechas. El rango se controla mediante el setting `scheduling_days_limit` (default: 7 días). Si no se envían `date_from`/`date_to`, se muestra el rango por defecto. Si se envían, el rango se acota automáticamente según el límite configurado.
 
 8. **Dashboard de Profesor:** Los endpoints de `/api/teacher/` están diseñados para que los profesores gestionen sus clases, asistencia y cancelaciones.
 
@@ -3105,7 +3129,7 @@ Authorization: Bearer {token}
 
 ### 3. Ver Horarios Disponibles (como Estudiante)
 ```bash
-GET /api/student/available-slots?teacher_id=2&date=2026-01-25
+GET /api/student/available-slots?classType=theoretical&date_from=2026-01-26&date_to=2026-01-30&teacher_id=2
 Authorization: Bearer {token}
 ```
 

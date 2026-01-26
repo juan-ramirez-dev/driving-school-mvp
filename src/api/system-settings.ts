@@ -9,6 +9,8 @@ import { ApiResponse } from "../utils/errorHandler";
 export interface SystemSetting {
   id: number;
   setting_key: string;
+  name: string | null;
+  description: string | null;
   type: "string" | "int" | "bool" | "json";
   value: string | number | boolean;
   created_at?: string;
@@ -19,11 +21,15 @@ export interface CreateSystemSettingData {
   setting_key: string;
   type: "string" | "int" | "bool" | "json";
   value: string | number | boolean;
+  name?: string | null;
+  description?: string | null;
 }
 
 export interface UpdateSystemSettingData {
   type: "string" | "int" | "bool" | "json";
   value: string | number | boolean;
+  name?: string | null;
+  description?: string | null;
 }
 
 /**

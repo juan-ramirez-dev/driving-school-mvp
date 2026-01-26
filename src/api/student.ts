@@ -14,28 +14,64 @@ import type {
   CancelBookingPayload,
   CancelBookingResponse,
 } from "../mocks/student";
+import { ScheduleSlot } from "../utils/responseTransformers";
 
 /**
- * GET /student/available-slots?class_type_id=:id
- * Returns available class slots for the next 2 weeks
- * class_type_id: 1 = theoretical, 2 = practical
+ * GET /api/student/available-slots
+ * Returns available class slots for students
+ * 
+ * Query Parameters (all optional):
+ * - classType: "theoretical" | "practical" (string, not class_type_id)
+ * - date_from: YYYY-MM-DD
+ * - date_to: YYYY-MM-DD
+ * - teacher_id: number
+ * 
+ * Response structure:
+ * {
+ *   "data": {
+ *     "slots": [...],
+ *     "teachers": {...},
+ *     "resources": {...},
+ *     "classTypes": {...}
+ *   }
+ * }
  */
-export async function getAvailableSlots(
-  classType?: "theoretical" | "practical"
-): Promise<ApiResponse<AvailableSlot[]>> {
-  let endpoint = "/student/available-slots";
-  if (classType) {
-    const class_type_id = classType === "theoretical" ? 1 : 2;
-    endpoint = `/student/available-slots?class_type_id=${class_type_id}`;
+export async function getAvailableSlots(filters?: {
+  classType?: "theoretical" | "practical";
+  date_from?: string;
+  date_to?: string;
+  teacher_id?: number;
+}): Promise<ApiResponse<AvailableSlot[]>> {
+  const params = new URLSearchParams();
+  
+  if (filters?.classType) {
+    params.append("classType", filters.classType);
+  }
+  if (filters?.date_from) {
+    params.append("date_from", filters.date_from);
+  }
+  if (filters?.date_to) {
+    params.append("date_to", filters.date_to);
+  }
+  if (filters?.teacher_id) {
+    params.append("teacher_id", String(filters.teacher_id));
   }
   
-  const response = await apiGet<any[]>(endpoint);
+  const endpoint = params.toString() 
+    ? `/student/available-slots?${params.toString()}`
+    : "/student/available-slots";
+  
+  const response = await apiGet<any>(endpoint);
+
 
   if (response.success && response.data) {
     const { transformAvailableSlots } = await import("../utils/responseTransformers");
+    const transformed = transformAvailableSlots(response.data as ScheduleSlot[]);
+
+    console.log(transformed);
     return {
       ...response,
-      data: transformAvailableSlots(response.data),
+      data: transformed,
     };
   }
   
