@@ -313,14 +313,15 @@ export default function StudentDashboardPage() {
     toast.info("Sesión cerrada exitosamente");
   };
 
-  // Format date for display (memoized)
+  // Format date for display (memoized) - Colombia timezone
   const formatDate = useCallback((dateStr: string) => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString("es-ES", {
+    const date = new Date(dateStr + "T00:00:00"); // Add time to avoid UTC interpretation issues
+    return date.toLocaleDateString("es-CO", {
       weekday: "long",
       year: "numeric",
       month: "long",
       day: "numeric",
+      timeZone: "America/Bogota",
     });
   }, []);
 
@@ -798,7 +799,9 @@ export default function StudentDashboardPage() {
                               <div className="flex items-center gap-2 text-muted-foreground text-xs">
                                 <CheckCircle2 className="h-3 w-3" />
                                 <span>
-                                  Registrado: {new Date(booking.checkedInAt).toLocaleString("es-ES")}
+                                  Registrado: {new Date(booking.checkedInAt).toLocaleString("es-CO", {
+                                    timeZone: "America/Bogota",
+                                  })}
                                 </span>
                               </div>
                             )}
@@ -807,7 +810,9 @@ export default function StudentDashboardPage() {
                                 <XCircle className="h-4 w-4" />
                                 <span>
                                   Cancelada el{" "}
-                                  {new Date(booking.cancelledAt).toLocaleDateString("es-ES")}
+                                  {new Date(booking.cancelledAt).toLocaleDateString("es-CO", {
+                                    timeZone: "America/Bogota",
+                                  })}
                                 </span>
                               </div>
                             )}
