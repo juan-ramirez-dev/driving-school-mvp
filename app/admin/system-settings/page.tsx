@@ -217,7 +217,7 @@ export default function SystemSettingsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Clave</TableHead>
+                    <TableHead>Nombre</TableHead>
                     <TableHead>Tipo</TableHead>
                     <TableHead>Valor</TableHead>
                     <TableHead>Acciones</TableHead>
@@ -226,7 +226,7 @@ export default function SystemSettingsPage() {
                 <TableBody>
                   {settings.map((setting) => (
                     <TableRow key={setting.id}>
-                      <TableCell className="font-medium">{setting.setting_key}</TableCell>
+                      <TableCell className="font-medium">{setting.name}</TableCell>
                       <TableCell>{setting.type}</TableCell>
                       <TableCell>{String(setting.value)}</TableCell>
                       <TableCell>
