@@ -14,7 +14,6 @@ import type {
   CancelBookingPayload,
   CancelBookingResponse,
 } from "../mocks/student";
-import { ScheduleSlot } from "../utils/responseTransformers";
 
 /**
  * GET /api/student/available-slots
@@ -66,7 +65,8 @@ export async function getAvailableSlots(filters?: {
 
   if (response.success && response.data) {
     const { transformAvailableSlots } = require("../utils/responseTransformers");
-    const transformed = transformAvailableSlots(response.data as ScheduleSlot[]);
+    // Backend returns nested structure: { slots: [], teachers: {}, resources: {}, classTypes: {} }
+    const transformed = transformAvailableSlots(response.data);
 
     return {
       ...response,

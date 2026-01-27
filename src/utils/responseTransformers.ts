@@ -178,105 +178,143 @@ function transformAppointmentToClass(appointment: any): any {
  * 
  * Backend response structure:
  * {
- *   "slots": [
- *     {
- *       "date": "2026-01-26",
- *       "startTime": "09:00",
- *       "endTime": "10:00",
- *       "options": [
- *         {
- *           "id": "slot_2_2026-01-26_0900_3",
- *           "teacher_id": 2,
- *           "resource_id": 3,
- *           "class_type_id": 1,
- *           "availableSpots": 17,
- *           "totalCapacity": 20,
- *           "currentBookings": 3
- *         }
- *       ]
- *     }
- *   ],
- *   "teachers": { "2": { "id": 2, "name": "María García", "document": "87654321" } },
- *   "resources": { "3": { "id": 3, "name": "Aula 101", "type": "classroom", "capacity": 20 } },
- *   "classTypes": { "1": { "id": 1, "name": "Teórica", "requires_resource": true } }
+ *   "data": {
+ *     "slots": [
+ *       {
+ *         "date": "2026-01-27",
+ *         "startTime": "08:00",
+ *         "endTime": "09:00",
+ *         "options": [
+ *           {
+ *             "id": "slot_4_2026-01-27_0800_1",
+ *             "teacher_id": 4,
+ *             "resource_id": 1,
+ *             "class_type_id": 1,
+ *             "availableSpots": 20,
+ *             "totalCapacity": 20,
+ *             "currentBookings": 0
+ *           }
+ *         ]
+ *       }
+ *     ],
+ *     "teachers": { "4": { "id": 4, "name": "Juan Pérez", "document": 12345678 } },
+ *     "resources": { "1": { "id": 1, "name": "Aula 101", "type": "classroom", "capacity": 20 } },
+ *     "classTypes": { "1": { "id": 1, "name": "Teórica", "requires_resource": true } }
+ *   }
  * }
  */
 
-
-export interface ScheduleSlot {
+export interface SlotOption {
   id: string;
-  date: string; // YYYY-MM-DD
-  startTime: string; // HH:mm
-  endTime: string; // HH:mm
-  teacher: ScheduleTeacher;
-  resource: Resource;
-  classType: ClassType;
+  teacher_id: number;
+  resource_id: number;
+  class_type_id: number;
   availableSpots: number;
   totalCapacity: number;
   currentBookings: number;
 }
 
-export interface ScheduleTeacher {
-  id: number;
-  name: string;
-  document: number;
+export interface SlotGroup {
+  date: string; // YYYY-MM-DD
+  startTime: string; // HH:mm
+  endTime: string; // HH:mm
+  options: SlotOption[];
 }
 
-export interface Resource {
-  id: number;
-  name: string;
-  type: ResourceType;
-  capacity: number;
+export interface BackendAvailableSlotsResponse {
+  slots: SlotGroup[];
+  teachers: Record<string, {
+    id: number;
+    name: string;
+    document: number;
+  }>;
+  resources: Record<string, {
+    id: number;
+    name: string;
+    type: "classroom" | "vehicle";
+    capacity: number;
+  }>;
+  classTypes: Record<string, {
+    id: number;
+    name: string;
+    requires_resource: boolean;
+  }>;
 }
 
-export type ResourceType = 'classroom';
-
-export interface ClassType {
-  id: number;
-  name: string;
-  requires_resource: boolean;
-}
-
-
-export function transformAvailableSlots(backendResponse: ScheduleSlot[]): AvailableSlot[] {
-  return backendResponse.map((slotGroup: ScheduleSlot) => {
-    // Convert class type name to enum value
-    const classTypeName = slotGroup.classType.name?.toLowerCase() || "";
-    let classTypeEnum: StudentClassType = "practical";
-    if (
-      classTypeName.includes("teórica") ||
-      classTypeName.includes("teorica") ||
-      classTypeName.includes("theoretical") ||
-      slotGroup.classType.id === 1
-    ) {
-      classTypeEnum = "theoretical";
-    }
-
+export function transformAvailableSlots(backendResponse: BackendAvailableSlotsResponse): AvailableSlot[] {
+  const result: AvailableSlot[] = [];
+  
+  // Extract maps from response
+  const teachers = backendResponse.teachers || {};
+  const resources = backendResponse.resources || {};
+  const classTypes = backendResponse.classTypes || {};
+  
+  // Iterate through each slot group
+  backendResponse.slots.forEach((slotGroup: SlotGroup) => {
+    const date = slotGroup.date;
     // Format time strings to HH:mm format
     const startTime = slotGroup.startTime?.substring(0, 5) || slotGroup.startTime;
     const endTime = slotGroup.endTime?.substring(0, 5) || slotGroup.endTime;
-
-    return {
-      id: slotGroup.id,
-      date: slotGroup.date,
-      startTime: startTime,
-      endTime: endTime,
-      classType: classTypeEnum,
-      teacherId: String(slotGroup.teacher.id),
-      teacherName: slotGroup.teacher.name,
-      availableSpots: slotGroup.availableSpots,
-      totalSpots: slotGroup.totalCapacity,
-      resourceId: slotGroup.resource.id,
-      resourceName: slotGroup.resource.name,
-      resourceType: slotGroup.resource.type,
-      resourceCapacity: slotGroup.resource.capacity,
-    } as AvailableSlot & {
-      resourceId: number;
-      resourceName: string;
-      resourceType: ResourceType;
-      resourceCapacity: number;
-    };
+    
+    // Each option becomes a separate AvailableSlot
+    slotGroup.options.forEach((option: SlotOption) => {
+      // Look up teacher from map
+      const teacherIdStr = String(option.teacher_id);
+      const teacher = teachers[teacherIdStr] || { id: option.teacher_id, name: "Instructor", document: 0 };
+      
+      // Look up resource from map
+      const resourceIdStr = String(option.resource_id);
+      const resource = resources[resourceIdStr] || { 
+        id: option.resource_id, 
+        name: "Recurso", 
+        type: "classroom" as const, 
+        capacity: 0 
+      };
+      
+      // Look up class type from map
+      const classTypeIdStr = String(option.class_type_id);
+      const classType = classTypes[classTypeIdStr] || { 
+        id: option.class_type_id, 
+        name: "Práctica", 
+        requires_resource: true 
+      };
+      
+      // Convert class type name to enum value
+      const classTypeName = classType.name?.toLowerCase() || "";
+      let classTypeEnum: StudentClassType = "practical";
+      if (
+        classTypeName.includes("teórica") ||
+        classTypeName.includes("teorica") ||
+        classTypeName.includes("theoretical") ||
+        classType.id === 1
+      ) {
+        classTypeEnum = "theoretical";
+      }
+      
+      result.push({
+        id: option.id,
+        date: date,
+        startTime: startTime,
+        endTime: endTime,
+        classType: classTypeEnum,
+        teacherId: String(teacher.id),
+        teacherName: teacher.name,
+        availableSpots: option.availableSpots,
+        totalSpots: option.totalCapacity,
+        resourceId: resource.id,
+        resourceName: resource.name,
+        resourceType: resource.type,
+        resourceCapacity: resource.capacity,
+      } as AvailableSlot & {
+        resourceId: number;
+        resourceName: string;
+        resourceType: "classroom" | "vehicle";
+        resourceCapacity: number;
+      });
+    });
   });
+  
+  return result;
 }
 
 /**

@@ -45,6 +45,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export default function SystemSettingsPage() {
   const [settings, setSettings] = useState<SystemSetting[]>([]);
@@ -58,6 +64,39 @@ export default function SystemSettingsPage() {
     type: "string" as "string" | "int" | "bool" | "json",
     value: "",
   });
+
+  // Auto-detect type from value
+  const detectType = (value: string): "string" | "int" | "bool" | "json" => {
+    if (value === "" || value === null || value === undefined) {
+      return "string";
+    }
+    
+    // Check for boolean values
+    const lowerValue = value.toLowerCase().trim();
+    if (lowerValue === "true" || lowerValue === "false" || 
+        lowerValue === "sí" || lowerValue === "si" || lowerValue === "no" ||
+        lowerValue === "1" || lowerValue === "0") {
+      return "bool";
+    }
+    
+    // Check for integer
+    if (/^-?\d+$/.test(value.trim())) {
+      return "int";
+    }
+    
+    // Check for JSON
+    if ((value.trim().startsWith("{") && value.trim().endsWith("}")) ||
+        (value.trim().startsWith("[") && value.trim().endsWith("]"))) {
+      try {
+        JSON.parse(value);
+        return "json";
+      } catch {
+        return "string";
+      }
+    }
+    
+    return "string";
+  };
 
   useEffect(() => {
     loadSettings();
@@ -83,10 +122,14 @@ export default function SystemSettingsPage() {
   const handleOpenDialog = (setting?: SystemSetting) => {
     if (setting) {
       setEditingSetting(setting);
+      // Convert boolean value to "Sí"/"No" for display
+      const displayValue = setting.type === "bool" 
+        ? (setting.value ? "Sí" : "No")
+        : String(setting.value);
       setFormData({
         setting_key: setting.setting_key,
         type: setting.type,
-        value: String(setting.value),
+        value: displayValue,
       });
     } else {
       setEditingSetting(null);
@@ -112,18 +155,31 @@ export default function SystemSettingsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      // Auto-detect type if creating new setting
+      const detectedType = editingSetting ? formData.type : detectType(formData.value);
+      
       let valueToSend: string | number | boolean = formData.value;
       
-      // Convert value based on type
-      if (formData.type === "int") {
+      // Convert value based on detected type
+      if (detectedType === "int") {
         valueToSend = Number(formData.value);
-      } else if (formData.type === "bool") {
-        valueToSend = formData.value === "true" || formData.value === "1";
+      } else if (detectedType === "bool") {
+        // Handle both Spanish and English boolean values
+        const lowerValue = formData.value.toLowerCase().trim();
+        valueToSend = lowerValue === "sí" || lowerValue === "si" || 
+                      lowerValue === "true" || lowerValue === "1";
+      } else if (detectedType === "json") {
+        try {
+          valueToSend = JSON.parse(formData.value);
+        } catch {
+          toast.error("Valor JSON inválido");
+          return;
+        }
       }
 
       if (editingSetting) {
         const result = await updateSystemSetting(editingSetting.setting_key, {
-          type: formData.type,
+          type: detectedType,
           value: valueToSend,
         });
         if (result.success) {
@@ -136,7 +192,7 @@ export default function SystemSettingsPage() {
       } else {
         const result = await createSystemSetting({
           setting_key: formData.setting_key,
-          type: formData.type,
+          type: detectedType,
           value: valueToSend,
         });
         if (result.success) {
@@ -170,6 +226,14 @@ export default function SystemSettingsPage() {
       toast.error("Error al eliminar configuración");
       console.error(error);
     }
+  };
+
+
+  const formatValue = (value: string | number | boolean) => {
+    if (typeof value === "boolean") {
+      return value ? "Sí" : "No";
+    }
+    return value;
   };
 
   if (isLoading) {
@@ -218,40 +282,49 @@ export default function SystemSettingsPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Nombre</TableHead>
-                    <TableHead>Tipo</TableHead>
                     <TableHead>Valor</TableHead>
                     <TableHead>Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {settings.map((setting) => (
-                    <TableRow key={setting.id}>
-                      <TableCell className="font-medium">{setting.name}</TableCell>
-                      <TableCell>{setting.type}</TableCell>
-                      <TableCell>{String(setting.value)}</TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleOpenDialog(setting)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => {
-                              setSettingToDelete(setting);
-                              setIsDeleteDialogOpen(true);
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  <TooltipProvider>
+                    {settings.map((setting) => (
+                      <Tooltip key={setting.id}>
+                        <TooltipTrigger asChild>
+                          <TableRow>
+                            <TableCell className="font-medium">{setting.name}</TableCell>
+                            <TableCell>{formatValue(setting.value)}</TableCell>
+                            <TableCell>
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleOpenDialog(setting)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => {
+                                    setSettingToDelete(setting);
+                                    setIsDeleteDialogOpen(true);
+                                  }}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        </TooltipTrigger>
+                        {setting.description && (
+                          <TooltipContent>
+                            <p className="max-w-xs">{setting.description}</p>
+                          </TooltipContent>
+                        )}
+                      </Tooltip>
+                    ))}
+                  </TooltipProvider>
                 </TableBody>
               </Table>
             </div>
@@ -282,38 +355,36 @@ export default function SystemSettingsPage() {
               />
             </div>
             <div>
-              <Label htmlFor="type">Tipo *</Label>
-              <Select
-                value={formData.type}
-                onValueChange={(value: any) =>
-                  setFormData({ ...formData, type: value })
-                }
-                required
-              >
-                <SelectTrigger id="type">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="string">String</SelectItem>
-                  <SelectItem value="int">Integer</SelectItem>
-                  <SelectItem value="bool">Boolean</SelectItem>
-                  <SelectItem value="json">JSON</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
               <Label htmlFor="value">Valor *</Label>
-              <Input
-                id="value"
-                value={formData.value}
-                onChange={(e) =>
-                  setFormData({ ...formData, value: e.target.value })
-                }
-                placeholder={
-                  formData.type === "bool" ? "true o false" : "Valor"
-                }
-                required
-              />
+              {(formData.type === "bool" || (!editingSetting && detectType(formData.value) === "bool")) ? (
+                <Select
+                  value={formData.value}
+                  onValueChange={(value) => {
+                    setFormData({ ...formData, value, type: "bool" });
+                  }}
+                  required
+                >
+                  <SelectTrigger id="value">
+                    <SelectValue placeholder="Seleccione un valor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Sí">Sí</SelectItem>
+                    <SelectItem value="No">No</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  id="value"
+                  value={formData.value}
+                  onChange={(e) => {
+                    const newValue = e.target.value;
+                    const detectedType = editingSetting ? formData.type : detectType(newValue);
+                    setFormData({ ...formData, value: newValue, type: detectedType });
+                  }}
+                  placeholder="Valor (el tipo se detectará automáticamente)"
+                  required
+                />
+              )}
             </div>
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={handleCloseDialog}>
