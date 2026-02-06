@@ -96,17 +96,23 @@ export function handleError(
     typeof error === "object" &&
     error !== null
   ) {
-    // Handle Laravel validation error format
+    // Handle Laravel validation error format and backend business-rule errors (422)
     if ("errors" in error && typeof error.errors === "object" && error.errors !== null) {
       validationErrors = error.errors as Record<string, string[]>;
-      
-      // Format validation errors into a user-friendly message
-      if ("message" in error && typeof error.message === "string") {
-        // Use the main message, but also format individual errors
-        const formattedErrors = formatValidationErrors(validationErrors);
-        message = formattedErrors || String(error.message);
+      const formattedErrors = formatValidationErrors(validationErrors);
+      // When errors is empty (e.g. 422 with status/message only), prefer backend message
+      // so business-rule messages (resource blocked, access period, hours limit, etc.) are shown
+      if (
+        formattedErrors === "Validation error" &&
+        "message" in error &&
+        typeof (error as { message?: string }).message === "string"
+      ) {
+        message = String((error as { message: string }).message);
       } else {
-        message = formatValidationErrors(validationErrors);
+        message =
+          "message" in error && typeof (error as { message?: string }).message === "string"
+            ? formattedErrors || String((error as { message: string }).message)
+            : formattedErrors;
       }
     } else if ("message" in error) {
       message = String(error.message);

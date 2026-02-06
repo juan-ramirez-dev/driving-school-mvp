@@ -244,7 +244,7 @@ Solo retorna `status` `scheduled` o `confirmed`.
 - `end_time`: requerido, formato HH:i, posterior a `start_time`
 - `status`: opcional, uno de: `scheduled`, `confirmed`, `cancelled`, `completed`
 
-**Validaciones de negocio:** Si hay `resource_id`, se valida que el recurso no esté ocupado en ese horario.
+**Validaciones de negocio:** Si hay `resource_id`, se valida que el recurso no esté ocupado en ese horario. Si hay `resource_id` y `teacher_id`, se valida que el slot no esté bloqueado por un bloque de disponibilidad del recurso (mantenimiento, `ResourceAvailabilityBlock`) ni por un bloqueo docente-recurso (`TeacherResourceBlock`) → **422** con "El recurso no está disponible en ese horario (bloqueo o mantenimiento)." Si hay `student_id` y el estudiante tiene `access_start_date` y `access_end_date` definidos, la fecha de la cita debe estar dentro de ese rango → **422** si no. Si hay `student_id` y `student_max_hours_per_period` > 0, se valida que la suma de horas agendadas del estudiante en el periodo (según `student_hours_period_type`) más la duración del slot no supere el límite → **422** si se supera.
 
 **Response 201:**
 ```json
@@ -269,7 +269,11 @@ Solo retorna `status` `scheduled` o `confirmed`.
 }
 ```
 
-**Response 422:** `{ "status": "error", "message": "El recurso ya está ocupado en ese horario", "errors": [] }`
+**Response 422:**
+- `{ "status": "error", "message": "El recurso ya está ocupado en ese horario", "errors": [] }`
+- `{ "status": "error", "message": "El recurso no está disponible en ese horario (bloqueo o mantenimiento).", "errors": [] }`
+- `{ "status": "error", "message": "La fecha de la cita está fuera de tu periodo de acceso (desde DD/MM/YYYY hasta DD/MM/YYYY).", "errors": [] }`
+- `{ "status": "error", "message": "Ha alcanzado el máximo de X horas para este periodo.", "errors": [] }`
 
 ---
 
@@ -281,6 +285,8 @@ Solo retorna `status` `scheduled` o `confirmed`.
 **Path:** `id` — ID de la cita  
 
 **Body:** mismos campos que crear.
+
+**Validaciones de negocio:** Además de las de crear (rango de acceso, límites de clases/horas), si se envían `resource_id` y `teacher_id` se valida que el slot no esté bloqueado por `ResourceAvailabilityBlock` ni `TeacherResourceBlock` → **422** "El recurso no está disponible en ese horario (bloqueo o mantenimiento)."
 
 **Response 200:** `{ "status": "success", "message": "Cita actualizada correctamente", "data": { ... } }`
 
@@ -517,6 +523,19 @@ Solo retorna `status` `scheduled` o `confirmed`.
 **Validaciones:** `teacher_ids` requerido, array; cada ID debe existir en users.
 
 **Response 200:** `{ "message": "Docentes asignados correctamente" }`
+
+---
+
+### 3.7 Bloqueos de disponibilidad del recurso (mantenimiento/taller)
+**Resource Availability Blocks.** Afectan slots disponibles y validación al crear/actualizar citas.
+
+- **GET** `/api/resource-availability-blocks` — Query: `resource_id` (opcional). Lista bloques ordenados por start_datetime.
+- **POST** `/api/resource-availability-blocks` — Body: `resource_id`, `start_datetime`, `end_datetime` (end > start), `reason` (opcional).
+- **GET** `/api/resource-availability-blocks/{id}` — Ver un bloque.
+- **PUT** `/api/resource-availability-blocks/{id}` — Actualizar.
+- **DELETE** `/api/resource-availability-blocks/{id}` — Eliminar.
+
+**Response 200/201:** Formato estándar success con `data` del bloque (incl. relación `resource`).
 
 ---
 
@@ -793,6 +812,19 @@ Solo retorna `status` `scheduled` o `confirmed`.
 
 ---
 
+### 6.6 Bloqueos docente-recurso (Teacher Resource Blocks)
+**Teacher Resource Blocks.** Un docente (o admin) puede bloquear un recurso para una fecha (y opcionalmente rango de horas). Si `start_time`/`end_time` son null = todo el día. Afectan slots disponibles y validación al reservar.
+
+- **GET** `/api/teacher/resource-blocks` — Query: `teacher_id` (solo admin), `resource_id`, `date_from`, `date_to`. Docente solo ve los suyos.
+- **POST** `/api/teacher/resource-blocks` — Body: `resource_id`, `date`, `start_time` (opcional), `end_time` (opcional), `reason` (opcional). Docente: teacher_id = auth; admin puede enviar `teacher_id`. Regla: ambos null o ambos presentes con end > start.
+- **GET** `/api/teacher/resource-blocks/{id}` — Ver bloque (docente solo los suyos).
+- **PUT** `/api/teacher/resource-blocks/{id}` — Actualizar.
+- **DELETE** `/api/teacher/resource-blocks/{id}` — Eliminar.
+
+**Response 200/201:** Formato estándar success.
+
+---
+
 ## 7. System Settings
 
 ### 7.1 Listar Configuraciones
@@ -858,9 +890,15 @@ Solo retorna `status` `scheduled` o `confirmed`.
 
 Claves en `system_settings` que parametrizan reglas de negocio. Valores por defecto en `SchoolSettingsSeeder`. Se gestionan con los endpoints de System Settings.
 
-**Cancelación:** `cancellation_hours_limit` (int, 4), `cancellation_allow_after_limit` (bool, true), `cancellation_late_penalty_enabled` (bool, true), `cancellation_late_penalty_amount` (int, 50000).
+**Cancelación:** `cancellation_hours_limit` (int, 4), `cancellation_allow_after_limit` (bool, true), `cancellation_late_penalty_enabled` (bool, true), `cancellation_late_penalty_amount` (int, 50000). Multas por tipo de clase: `cancellation_late_penalty_amount_class_type_{id}` (int); si existe para el tipo de clase de la cita se usa ese monto, si no el global. En todos los casos de aplicación de multa se valida que el tipo de clase de la cita exista en `class_types`.
 
-**Asistencia:** `attendance_tolerance_minutes` (int, 10), `attendance_count_absent_as_no_show` (bool, true), `attendance_no_show_penalty_enabled` (bool, true), `attendance_no_show_penalty_amount` (int, 50000), `attendance_no_show_limit` (int, 3). Al superar el límite de inasistencias, el estudiante no puede reservar nuevas clases.
+**Asistencia:** `attendance_tolerance_minutes` (int, 10), `attendance_count_absent_as_no_show` (bool, true), `attendance_no_show_penalty_enabled` (bool, true), `attendance_no_show_penalty_amount` (int, 50000), `attendance_no_show_penalty_amount_class_type_{id}` (int, por tipo de clase), `attendance_no_show_limit` (int, 3). Al superar el límite de inasistencias, el estudiante no puede reservar nuevas clases.
+
+**Límite de horas por periodo (estudiante):** `student_max_hours_per_period` (int, 0 = sin límite), `student_hours_period_type` (string: `week` | `fortnight` | `month`, default `week`). Si `student_max_hours_per_period` > 0, al crear o actualizar una cita con `student_id` (POST/PUT appointments, POST book-class) se valida que la suma de horas ya agendadas del estudiante en ese periodo más la duración del slot no supere el límite; si se supera → **422** con mensaje "Ha alcanzado el máximo de X horas para este periodo."
+
+**Rango de acceso del estudiante (User):** Los usuarios (estudiantes) pueden tener `access_start_date` y `access_end_date` (date, nullable). Si ambos están definidos, el estudiante solo puede agendar citas cuya fecha esté dentro de ese rango. Validación en POST/PUT appointments y POST book-class → **422** si la fecha está fuera del rango. En GET `/api/student/available-slots` se puede enviar `student_id` (o se usa el usuario autenticado si es estudiante); si tiene rango definido, solo se devuelven slots en fechas con acceso.
+
+**Activación de acceso y correo:** Cuando se activa el acceso de un estudiante (tras crear o actualizar el usuario con `access_start_date` y `access_end_date` que incluyen hoy, y antes no tenía acceso hoy o es usuario recién creado), se envía un correo al estudiante indicando que ya puede agendar clases y el rango de fechas. El correo se encola (Mail/Queue). Criterio documentado en `UserAccessService::notifyIfActivated`.
 
 ---
 
@@ -1333,7 +1371,7 @@ Solo recursos `type = 'classroom'`.
 
 **Validaciones de negocio:** El estudiante debe ser el de la cita.
 
-**Reglas de negocio (parametrizables):** Si `attended` = false se marca `attendance_status` = `absent`. Si `attendance_count_absent_as_no_show` y `attendance_no_show_penalty_enabled` = true, se aplica multa por inasistencia. La respuesta incluye `penalty_applied` (bool) cuando `attended` = false.
+**Reglas de negocio (parametrizables):** Si `attended` = false se marca `attendance_status` = `absent`. Si `attendance_count_absent_as_no_show` y `attendance_no_show_penalty_enabled` = true, se aplica multa por inasistencia (monto según tipo de clase de la cita; se valida que el tipo de clase exista). La respuesta incluye `penalty_applied` (bool) cuando `attended` = false.
 
 **Response 200:**
 ```json
@@ -1395,8 +1433,8 @@ Solo recursos `type = 'classroom'`.
 
 **Autenticación:** Requerida
 
-**Query (opcional):** `classType` — `theoretical` | `practical`.  
-Si no se envía, retorna slots de todos los tipos (próximas 2 semanas).
+**Query (opcionales):** `classType` — `theoretical` | `practical`; `student_id` o `studentId` (integer) — ID del estudiante. Si se envía `student_id` y el estudiante tiene `access_start_date` y `access_end_date` definidos, solo se devuelven slots en fechas dentro de ese rango. Si el usuario autenticado es estudiante y no se envía, se usa su ID.  
+Si no se envía classType, retorna slots de todos los tipos (próximas 2 semanas).
 
 **Response 200:**
 ```json
@@ -1416,7 +1454,7 @@ Si no se envía, retorna slots de todos los tipos (próximas 2 semanas).
   ]
 }
 ```
-Para práctica, `resource` será un vehículo cuando `requires_resource` es `true`.
+Para práctica, `resource` será un vehículo cuando `requires_resource` es `true`. Los slots excluyen automáticamente horarios en los que el recurso está en mantenimiento (`ResourceAvailabilityBlock`) o el docente tiene bloqueado ese recurso para esa fecha/hora (`TeacherResourceBlock`).
 
 ---
 
@@ -1448,9 +1486,12 @@ Para práctica, `resource` será un vehículo cuando `requires_resource` es `tru
 - `end_time`: requerido, HH:i, posterior a `start_time`
 
 **Validaciones de negocio:**
-- El recurso no debe estar ocupado en ese horario si se envía `resource_id`.
+- El recurso no debe estar ocupado en ese horario si se envía `resource_id`. Además no debe haber un bloque de disponibilidad del recurso (`ResourceAvailabilityBlock`) ni un bloqueo docente-recurso (`TeacherResourceBlock`) que solape con la fecha/hora. Si el recurso está bloqueado → **422** "El recurso no está disponible en ese horario (bloqueo o mantenimiento)."
+- El mismo estudiante no puede tener ya una cita activa del mismo tipo de clase en la misma fecha y horario. Si ya tiene agendada esa clase en ese slot → **422**.
 - Tipo Práctica → siempre enviar `resource_id` (vehículo).
 - El estudiante no debe superar el límite de inasistencias (`attendance_no_show_limit`). Si lo supera → **422**.
+- Si el estudiante tiene `access_start_date` y `access_end_date` definidos, la fecha de la cita debe estar dentro de ese rango. Si no → **422**.
+- Si `student_max_hours_per_period` > 0, la suma de horas ya agendadas del estudiante en el periodo (según `student_hours_period_type`) más la duración del slot no debe superar el límite. Si se supera → **422**.
 
 **Response 201:**
 ```json
@@ -1478,7 +1519,11 @@ Para práctica, `resource` será un vehículo cuando `requires_resource` es `tru
 **Response 422:**
 - `{ "status": "error", "message": "Este tipo de clase requiere un recurso", "errors": [] }`
 - `{ "status": "error", "message": "El recurso ya está ocupado en ese horario", "errors": [] }`
+- `{ "status": "error", "message": "El recurso no está disponible en ese horario (bloqueo o mantenimiento).", "errors": [] }`
+- `{ "status": "error", "message": "Ya tiene agendada una clase de este tipo en ese horario. No puede reservar dos veces el mismo espacio.", "errors": [] }`
 - `{ "status": "error", "message": "Ha superado el límite de inasistencias. No puede reservar nuevas clases.", "errors": [] }`
+- `{ "status": "error", "message": "La fecha de la cita está fuera de tu periodo de acceso (desde DD/MM/YYYY hasta DD/MM/YYYY).", "errors": [] }`
+- `{ "status": "error", "message": "Ha alcanzado el máximo de X horas para este periodo.", "errors": [] }`
 
 ---
 
@@ -1532,7 +1577,7 @@ Si no se envía, el backend puede usar el usuario autenticado según implementac
 
 **Validaciones:** `appointment_id` y `student_id` requeridos; `reason` opcional.
 
-**Validaciones de negocio:** La cita debe pertenecer al estudiante; no se puede cancelar una clase completada. Si `cancellation_allow_after_limit` = false y la cancelación es tardía → **422**. Si se permite y es tardía, puede aplicarse penalización según `cancellation_late_penalty_enabled`.
+**Validaciones de negocio:** La cita debe pertenecer al estudiante; no se puede cancelar una clase completada. Si `cancellation_allow_after_limit` = false y la cancelación es tardía → **422**. Si se permite y es tardía, puede aplicarse penalización según `cancellation_late_penalty_enabled` (monto por tipo de clase; se valida que el tipo de clase exista).
 
 **Response 200:**
 ```json

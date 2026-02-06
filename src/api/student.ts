@@ -159,27 +159,20 @@ export async function bookClass(
   
   const response = await apiPost<any>("/student/book-class", finalPayload);
   
-  // Handle specific error messages
-  if (!response.success) {
-    // Map common backend error messages
-    if (response.message?.includes("límite de inasistencias")) {
-      return {
-        ...response,
-        message: "Ha superado el límite de inasistencias. No puede reservar nuevas clases.",
-      };
-    }
-    if (response.message?.includes("requiere un recurso")) {
-      return {
-        ...response,
-        message: "Este tipo de clase requiere un recurso",
-      };
-    }
-    if (response.message?.includes("ocupado")) {
-      return {
-        ...response,
-        message: "El recurso ya está ocupado en ese horario",
-      };
-    }
+  // Surface backend business-rule messages (422) so UI shows exact reason
+  if (!response.success && response.message) {
+    // Normalize key messages to match API contract wording (backend message is already used by errorHandler)
+    if (response.message.includes("límite de inasistencias") || response.message.includes("inasistencias"))
+      return { ...response, message: "Ha superado el límite de inasistencias. No puede reservar nuevas clases." };
+    if (response.message.includes("requiere un recurso"))
+      return { ...response, message: "Este tipo de clase requiere un recurso" };
+    if (response.message.includes("bloqueo") || response.message.includes("mantenimiento"))
+      return { ...response, message: "El recurso no está disponible en ese horario (bloqueo o mantenimiento)." };
+    if (response.message.includes("ocupado") && !response.message.includes("bloqueo"))
+      return { ...response, message: "El recurso ya está ocupado en ese horario" };
+    if (response.message.includes("Ya tiene agendada") || response.message.includes("mismo espacio"))
+      return { ...response, message: "Ya tiene agendada una clase de este tipo en ese horario. No puede reservar dos veces el mismo espacio." };
+    // Periodo de acceso, máximo de horas, etc.: backend message is already in response.message
   }
   
   if (response.success && response.data) {

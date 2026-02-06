@@ -260,7 +260,8 @@ export default function StudentDashboardPage() {
         toast.success("¡Clase reservada exitosamente!");
         router.push(`/student/appointment/${response.data.id}`);
       } else {
-        toast.error("Error al reservar clase");
+        const msg = !response.success && "message" in response ? response.message : "Error al reservar clase";
+        toast.error(msg);
       }
     } catch (error) {
       toast.error("Error al reservar clase");
